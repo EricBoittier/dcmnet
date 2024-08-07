@@ -1,10 +1,6 @@
 pickles/*
 .idea/*
 .idea
-ff_energy/reports/out_pdfs
-ff_energy/reports/out_pdfs/*
-ff_energy/reports/out_notebooks/
-ff_energy/reports/out_notebooks/*
 *pdf
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -35,14 +31,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
-ff_energy/pydcm/tests/*.csv
-ff_energy/pydcm/tests/*.png
-ff_energy/pydcm/tests/pkls
-
-experiments/kernel_fit/pkls
-experiments/kernel_fit/pkls/*
-cubes/*
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -176,11 +164,7 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
-
-cubes/*
-cubes/clcl/*
-
-ff_energy/pydcm/tests/*.csv
-ff_energy/pydcm/tests/*.pkl
+runs*/*
 checkpoints/*
+checkpoints*/*
 data/*
