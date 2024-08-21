@@ -8,7 +8,9 @@ from dcmnet.utils import clip_colors, apply_model
 from dcmnet.utils import reshape_dipole
 from dcmnet.multimodel import get_atoms_dcmol
 from dcmnet.multipoles import plot_3d
-from dcmnet.rdkit_utils import get_mol_from_id
+
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import optax
@@ -22,7 +24,10 @@ from rdkit.Chem import Draw
 plt.set_cmap("bwr")
 
 
-def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100):
+def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100, rcut0=1.7,
+               id=False):
+    
+    
     esp_dc_pred = esp_mono_loss_pots(
         dipo, mono, batch["vdw_surface"], batch["mono"], batch_size, nDCM
     )
@@ -35,16 +40,19 @@ def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100):
         batch_size,
     )
 
-    non_zero = np.nonzero(batch["mono"])
+    non_zero = np.nonzero(batch["atomic_numbers"])
 
     esp_errors = []
+    mono_errors = []
     xyzs = batch["positions"].reshape(batch_size, 60, 3)
     elems = batch["atomic_numbers"].reshape(batch_size, 60)
     monos_gt = batch["mono"].reshape(batch_size, 60)
     monos_pred = mono.reshape(batch_size, 60, nDCM)
-
-    mols = get_mol_from_id(batch)
-    images = [Draw.MolToImage(_) for _ in mols]
+    
+    if id:
+        from dcmnet.rdkit_utils import get_mol_from_id
+        mols = get_mol_from_id(batch)
+        images = [Draw.MolToImage(_) for _ in mols]
 
     for mbID in range(batch_size):
 
@@ -55,11 +63,23 @@ def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100):
         non_zero = np.nonzero(mono_gt)
 
         vdws = batch["vdw_surface"][mbID][: batch["ngrid"][mbID]]
+        if rcut0:
+            print(vdws.shape, cdist(vdws, xyz).shape)
+            print(np.all(cdist(vdws, xyz) >= (rcut0 - 1e-1), axis=-1))
+            rcut0_idx_bools = np.all(cdist(vdws, xyz) >= (rcut0 - 1e-1), axis=-1)
+            # vdws = vdws[]
+            # print(vdws[:10])
+        # print(vdws.shape)        
         diff = xyzs[mbID][:, None, :] - vdws[None, :, :]
         r = np.linalg.norm(diff, axis=-1)
         min_d = np.min(r, axis=-2)
         wheremind = np.where(min_d < rcut, min_d, 0)
-        idx_cut = np.nonzero(wheremind)[0]
+
+        if rcut0:
+            idx_cut = np.nonzero(wheremind*rcut0_idx_bools)[0]
+        else:
+            idx_cut = np.nonzero(wheremind)[0]
+        
         loss1 = (
             esp_loss_eval(
                 esp_dc_pred[mbID][: batch["ngrid"][mbID]][idx_cut],
@@ -77,62 +97,110 @@ def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100):
             * 627.509
         )
         esp_errors.append([loss1, loss2])
+        loss = jnp.mean(
+            abs(batch["mono"][non_zero] - mono.sum(axis=-1).squeeze()[non_zero])
+        )
+        mono_errors.append(loss)
+
 
         if plot:
 
             fig = plt.figure(figsize=(12, 12))
 
-            ax_scatter = fig.add_subplot(331)
-
-            ax_scatter.scatter(mono_gt, mono_pred_.sum(axis=-1).squeeze())
-
+            ax_scatter = fig.add_subplot(4,4,1)
+            ax_scatter2 = fig.add_subplot(4,4,5)
+            ax_scatter3 = fig.add_subplot(4,4,9)
+            ax_rdkit = fig.add_subplot(4,4,4, frameon=False)
+            ax1 = fig.add_subplot(4,4,3, projection="3d")
+            ax2 = fig.add_subplot(4,4,7, projection="3d")
+            ax4 = fig.add_subplot(4,4,8, projection="3d")
+            axmol = fig.add_subplot(4,4,10, frameon=False)
+            axmol3 = fig.add_subplot(4,4,2, frameon=False)
+            axmol2 = fig.add_subplot(4,4,6, frameon=False)
+            ax3 = fig.add_subplot(4,4,11, projection="3d")
+            ax5 = fig.add_subplot(4,4,12, projection="3d")           
+            
+            ax_scatter.scatter(mono_gt[non_zero], mono_pred_.sum(axis=-1).squeeze()[non_zero],
+                              c=mono_pred_.sum(axis=-1).squeeze()[non_zero], vmin=-1, vmax=1)
             loss = jnp.mean(
                 abs(batch["mono"][non_zero] - mono.sum(axis=-1).squeeze()[non_zero])
             )
-
-            plt.title(f"MAE: {loss:.3f}")
+            ax_scatter.set_title(f"MAE: {loss:.3f}")
 
             ax_scatter.plot([-1, 1], [-1, 1], c="k", alpha=0.5)
             ax_scatter.set_xlim(-1, 1)
             ax_scatter.set_ylim(-1, 1)
             ax_scatter.set_aspect("equal")
+            ax_scatter.set_xlabel("$q_\mathrm{mono.}$ [$e$]")
+            ax_scatter.set_ylabel("$q_\mathrm{dcmnet}$ [$e$]")
 
-            ax_scatter2 = fig.add_subplot(332)
-
+            # ax_hist = fig.add_subplot(443)
+            # ax_hist.hist(batch["esp"][mbID][: batch["ngrid"][mbID]], 
+            #              range=(-0.1,0.1), bins=50, 
+            #              edgecolor="g",
+            #              lw=3, facecolor="None",
+            #              label="GT",
+            #              alpha=0.9)
+            # ax_hist.hist(esp_dc_pred[mbID][: batch["ngrid"][mbID]], 
+            #              range=(-0.1,0.1), bins=50,
+            #              edgecolor="k",
+            #              label="dcmnet",
+            #              lw=3, facecolor="None",
+            #              alpha=0.9)
+            # ax_hist.hist(mono_pred[mbID][: batch["ngrid"][mbID]][idx_cut], 
+            #              range=(-0.1,0.1), bins=50,
+            #              edgecolor="b",
+            #              lw=3, facecolor="None",
+            #              label="mono",
+            #              alpha=0.9)
+            # ax_hist.set_xlim(-0.1, 0.1)
+            # ax_hist.legend()
+            
             ax_scatter2.scatter(
-                esp_dc_pred[mbID][: batch["ngrid"][mbID]],
                 batch["esp"][mbID][: batch["ngrid"][mbID]],
-                alpha=0.1,
+                esp_dc_pred[mbID][: batch["ngrid"][mbID]],
+
+                alpha=0.9,
+                s=0.1,
+                color="k",
             )
+            ax_scatter3.scatter(
+                batch["esp"][mbID][: batch["ngrid"][mbID]],
+                mono_pred[mbID][: batch["ngrid"][mbID]],
+                alpha=0.9,
+                s=0.1,
+                color="k",
+            )
+            for ax in [ax_scatter2, ax_scatter3]:
+                ax.set_xlabel("ESP$_\mathrm{DFT}$ [(kcal/mol)/$e$]")
+                ax.set_xlim(-0.1, 0.1)
+                ax.set_ylim(-0.1, 0.1)
+                ax.plot([-1, 1], [-1, 1], c="k", alpha=0.5)
+                ax.set_aspect("equal")
+            ax_scatter2.set_ylabel("ESP$_\mathrm{dcmnet}$ [(kcal/mol)/$e$]")
+            ax_scatter3.set_ylabel("ESP$_\mathrm{mono.}$ [(kcal/mol)/$e$]")
 
-            ax_scatter2.set_xlim(-0.1, 0.1)
-            ax_scatter2.set_ylim(-0.1, 0.1)
-            ax_scatter2.plot([-1, 1], [-1, 1], c="k", alpha=0.5)
-            ax_scatter2.set_aspect("equal")
-
-            ax_rdkit = fig.add_subplot(333, frameon=False)
-            ax_rdkit.imshow(images[mbID])
+            if id:
+                ax_rdkit.imshow(images[mbID])
             ax_rdkit.axis("off")
 
-            ax1 = fig.add_subplot(334, projection="3d")
             s = ax1.scatter(
                 *batch["vdw_surface"][mbID][: batch["ngrid"][mbID]][idx_cut].T,
                 c=clip_colors(batch["esp"][mbID][: batch["ngrid"][mbID]][idx_cut]),
                 vmin=-0.015,
                 vmax=0.015,
             )
-            ax1.set_title(f"GT {batch['id'][mbID]}")
+            if id:
+                ax1.set_title(f"GT ({batch['id'][mbID]})")
 
-            ax2 = fig.add_subplot(335, projection="3d")
             s = ax2.scatter(
                 *batch["vdw_surface"][mbID][: batch["ngrid"][mbID]][idx_cut].T,
                 c=clip_colors(esp_dc_pred[mbID][: batch["ngrid"][mbID]][idx_cut]),
                 vmin=-0.015,
                 vmax=0.015,
             )
-            ax2.set_title(f"dcmnet: {loss1:.3f} (kcal/mol)/$e$")
+            ax2.set_title(f"dcmnet: {loss1:.1f} (kcal/mol)/$e$")
 
-            ax4 = fig.add_subplot(336, projection="3d")
             s = ax4.scatter(
                 *batch["vdw_surface"][mbID][: batch["ngrid"][mbID]][idx_cut].T,
                 c=clip_colors(
@@ -143,24 +211,68 @@ def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100):
                 vmax=0.015,
             )
 
-            axmol = fig.add_subplot(337, frameon=False)
+            elem = elem[non_zero]
+            mono_gt = mono_gt[non_zero]
+            xyz = xyz[non_zero]
+
             atoms = ase.Atoms(
                 numbers=elem,
                 positions=xyz,
             )
-            plot_atoms(atoms, axmol, rotation=("-45x,-45y,0z"), scale=1)
-            axmol.axis("off")
+            
+            import dcmnet.utils
+            dipo_ = dipo.reshape(batch_size, 60 * nDCM, 3)[mbID]
+            d = dcmnet.utils.reshape_dipole(dipo_, nDCM)
 
-            ax3 = fig.add_subplot(338, projection="3d")
+            # import numpy as np
+            # import matplotlib.pyplot as plt
+            from matplotlib import cm
+            from matplotlib.colors import Normalize
+            
+            norm = Normalize(vmin=-1, vmax=1)
+            cmap = cm.get_cmap('bwr')
+            mappable = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+            pccolors = mappable.to_rgba(mono_gt.flatten()[:len(elem)])
+            from ase.data.colors import jmol_colors
+            atomcolors = [jmol_colors[_] for _ in elem]
+            atomcolors_ = []
+            for _ in atomcolors:
+                atomcolors_.append(np.append(_,0.015))
+            dcmcolors = mappable.to_rgba(mono.flatten()[:len(elem)*nDCM])
+
+            dcmol = ase.Atoms(["X" if not _  else "He" for _ in 
+                               mono.flatten()[:len(elem)*nDCM]], 
+                              d[0][:len(elem)*nDCM])
+            
+            plot_atoms(atoms, axmol, rotation=("-45x,-45y,0z"), 
+                       colors = pccolors, scale=1)
+            
+            axmol.axis("off")
+            plot_atoms(dcmol+atoms, axmol2, 
+                       colors=list(dcmcolors)+list(atomcolors_),
+                       radii=[0.1 if i < len(dcmcolors) else 
+                              ase.data.vdw_radii[elem[i-len(dcmcolors)]]/2.5 
+                              for i, _ in enumerate(list(dcmcolors)+list(atomcolors_))],
+                       rotation=("-45x,-45y,0z"), scale=1)
+            axmol2.axis("off")
+
+            # combined atoms and dcm
+            plot_atoms(atoms, axmol3, rotation=("-45x,-45y,0z"),
+                       colors=list(atomcolors),
+                       scale=1)
+            axmol3.axis("off")
+
+
+
             s = ax3.scatter(
                 *batch["vdw_surface"][mbID][: batch["ngrid"][mbID]][idx_cut].T,
                 c=clip_colors(mono_pred[mbID][: batch["ngrid"][mbID]][idx_cut]),
                 vmin=-0.015,
                 vmax=0.015,
             )
-            ax3.set_title(f"mono: {loss2:.3f} (kcal/mol)/$e$")
+            ax3.set_title(f"mono.: {loss2:.1f} (kcal/mol)/$e$")
 
-            ax5 = fig.add_subplot(339, projection="3d")
             s = ax5.scatter(
                 *batch["vdw_surface"][mbID][: batch["ngrid"][mbID]][idx_cut].T,
                 c=clip_colors(
@@ -173,15 +285,27 @@ def evaluate_dc(batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100):
 
             for _ in [ax1, ax2, ax3, ax4, ax5]:
                 _.set_xlim(-10, 10)
+                _.set_xlabel("$x~[\mathrm{\AA}]$")
                 _.set_ylim(-10, 10)
+                _.set_ylabel("$y~[\mathrm{\AA}]$")
                 _.set_zlim(-10, 10)
+                _.set_zlabel("$z~[\mathrm{\AA}]$")
 
             # adjust white space
-            plt.subplots_adjust(wspace=0.5, hspace=0.5)
-
+            plt.subplots_adjust(wspace=0.5, hspace=0.75)
+            plt.tight_layout()
+            if id:
+                key = batch["id"][mbID]
+            else:
+                key = ""
+            plt.savefig(f"/home/boittier/jaxeq/figures/summary-{plot}-{key}.pdf",
+                        bbox_inches="tight")
             plt.show()
-
-    return esp_errors, mono_pred
+            # plt.clf()
+    if id:
+        return esp_errors, mono_pred, mono_errors, batch["id"]
+    else:
+        return esp_errors, mono_pred, mono_errors, None
 
 
 def plot_3d_combined(combined, batch, batch_size=1):
@@ -207,11 +331,11 @@ def plot_3d_combined(combined, batch, batch_size=1):
 def plot_model(DCM2, params, batch, batch_size, nDCM):
     mono_dc2, dipo_dc2 = apply_model(DCM2, params, batch, batch_size)
 
-    esp_errors, mono_pred = evaluate_dc(
-        batch, dipo_dc2, mono_dc2, batch_size, nDCM, plot=True
+    esp_errors, mono_pred, _, _ = evaluate_dc(
+        batch, dipo_dc2, mono_dc2, batch_size, nDCM, plot=True, rcut0=3, rcut=4,
     )
 
-    atoms, dcmol, grid, esp, esp_dc_pred = create_plots2(
+    atoms, dcmol, grid, esp, esp_dc_pred, idx_cut = create_plots2(
         mono_dc2, dipo_dc2, batch, batch_size, nDCM
     )
     outDict = {
@@ -224,6 +348,7 @@ def plot_model(DCM2, params, batch, batch_size, nDCM):
         "esp": esp,
         "esp_dc_pred": esp_dc_pred,
         "esp_mono_pred": mono_pred,
+        "idx_cut": idx_cut,
     }
     return outDict
 
@@ -375,4 +500,4 @@ def create_plots2(mono_dc2, dipo_dc2, batch, batch_size, nDCM):
     # except:
     #     pass
     plot_3d(grid, esp, atoms=atoms + dcmol)
-    return atoms, dcmol, grid, esp, esp_dc_pred[0]
+    return atoms, dcmol, grid, esp, esp_dc_pred[0], grid_idx
