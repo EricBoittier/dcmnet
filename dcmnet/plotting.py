@@ -328,11 +328,11 @@ def plot_3d_combined(combined, batch, batch_size=1):
     return V1, V2, V3
 
 
-def plot_model(DCM2, params, batch, batch_size, nDCM):
+def plot_model(DCM2, params, batch, batch_size, nDCM, plot=True):
     mono_dc2, dipo_dc2 = apply_model(DCM2, params, batch, batch_size)
 
     esp_errors, mono_pred, _, _ = evaluate_dc(
-        batch, dipo_dc2, mono_dc2, batch_size, nDCM, plot=True, rcut0=3, rcut=4,
+        batch, dipo_dc2, mono_dc2, batch_size, nDCM, plot=plot, rcut0=3, rcut=4,
     )
 
     atoms, dcmol, grid, esp, esp_dc_pred, idx_cut = create_plots2(
