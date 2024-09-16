@@ -1,23 +1,46 @@
-import numpy as np
+import e3x
 import jax
 import jax.numpy as jnp
-import e3x
+import numpy as np
 
 
-def prepare_datasets(key, num_train, num_valid, filename="esp2000.npz"):
-    # Load the dataset.
-    dataset = np.load(filename)
+def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"]):
+    # Load the datasets
+    datasets = [np.load(f) for f in filename]
 
-    for k, v in dataset.items():
-        print(k, v.shape)
+    for dataset in datasets:
+        for k, v in dataset.items():
+            print(k, v.shape)
 
-    dataR = dataset["R"]
-    dataZ = dataset["Z"]
-    dataMono = dataset["mono"]
-    dataEsp = dataset["esp"]
-    dataVDW = dataset["vdw_surface"]
-    dataNgrid = dataset["n_grid"]
-    dataid = dataset["id"]
+    dataR = np.concatenate([dataset["R"] for dataset in datasets])
+    dataZ = np.concatenate([dataset["Z"] for dataset in datasets])
+    dataMono = np.concatenate([dataset["mono"] for dataset in datasets])
+    dataEsp = np.concatenate([dataset["esp"] for dataset in datasets])
+    dataVDW = np.concatenate([dataset["vdw_surface"] for dataset in datasets])
+    dataNgrid = np.concatenate([dataset["n_grid"] for dataset in datasets])
+    dataid = np.concatenate([dataset["id"] for dataset in datasets])
+
+    data = [dataR, dataZ, dataMono, dataEsp, dataVDW, dataNgrid, dataid]
+    keys = ["R", "Z", "mono", "esp", "vdw_surface", "n_grid", "id"]
+    assert_dataset_size(dataR, num_train, num_valid)
+    return data, keys
+
+
+def prepare_datasets(key, num_train, num_valid, filename=["esp2000.npz"]):
+    # Load the datasets
+    if isinstance(filename, str):
+        filename = [filename]
+
+    data, keys = prepare_multiple_datasets(key, num_train, num_valid, filename)
+
+    train_choice, valid_choice = get_choices(key, len(data[0]), num_train, num_valid)
+
+    train_data, valid_data = make_dicts(data, keys, train_choice, valid_choice)
+
+    return train_data, valid_data
+
+
+def assert_dataset_size(dataR, num_train, num_valid):
 
     # Make sure that the dataset contains enough entries.
     num_data = len(dataR)
@@ -29,34 +52,28 @@ def prepare_datasets(key, num_train, num_valid, filename="esp2000.npz"):
             f"requested num_train={num_train}, num_valid={num_valid}"
         )
 
+
+def get_choices(key, num_data, num_train, num_valid):
     # Randomly draw train and validation sets from dataset.
     choice = np.asarray(
-        jax.random.choice(key, num_data, shape=(num_draw,), replace=False)
+        jax.random.choice(key, num_data, shape=(num_data,), replace=False)
     )
     train_choice = choice[:num_train]
-    valid_choice = choice[num_train:]
+    valid_choice = choice[num_train : num_train + num_valid]
+    return train_choice, valid_choice
 
-    atomic_numbers = dataZ
 
-    # Collect and return train and validation sets.
-    train_data = dict(
-        atomic_numbers=jnp.asarray(atomic_numbers[train_choice]),
-        ngrid=jnp.array(dataNgrid[train_choice]),
-        positions=jnp.asarray(dataR[train_choice]),
-        mono=jnp.asarray(dataMono[train_choice]),
-        esp=jnp.asarray(dataEsp[train_choice]),
-        vdw_surface=jnp.asarray(dataVDW[train_choice]),
-        id=dataid[train_choice],
-    )
-    valid_data = dict(
-        atomic_numbers=jnp.asarray(atomic_numbers[valid_choice]),
-        positions=jnp.asarray(dataR[valid_choice]),
-        mono=jnp.asarray(dataMono[valid_choice]),
-        ngrid=jnp.array(dataNgrid[valid_choice]),
-        esp=jnp.asarray(dataEsp[valid_choice]),
-        vdw_surface=jnp.asarray(dataVDW[valid_choice]),
-        id=dataid[valid_choice],
-    )
+def make_dicts(data, keys, train_choice, valid_choice):
+    train_data, valid_data = dict(), dict()
+
+    for k in keys:
+        train_data[k] = data[k][train_choice]
+        valid_data[k] = data[k][valid_choice]
+
+    return train_data, valid_data
+
+
+def print_shapes(train_data, valid_data):
     print("...")
     print("...")
     for k, v in train_data.items():
