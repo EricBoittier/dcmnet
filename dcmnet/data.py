@@ -14,19 +14,47 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
 
     dataR = np.concatenate([dataset["R"] for dataset in datasets])
     dataZ = np.concatenate([dataset["Z"] for dataset in datasets])
+    dataN = np.concatenate([dataset["N"] for dataset in datasets])
     dataMono = np.concatenate([dataset["mono"] for dataset in datasets])
     dataEsp = np.concatenate([dataset["esp"] for dataset in datasets])
     dataVDW = np.concatenate([dataset["vdw_surface"] for dataset in datasets])
     dataNgrid = np.concatenate([dataset["n_grid"] for dataset in datasets])
     dataid = np.concatenate([dataset["id"] for dataset in datasets])
+    dataD = np.concatenate([dataset["D"] for dataset in datasets])
+    dataDxyz = np.concatenate([dataset["Dxyz"] for dataset in datasets])
+    dataCOM = np.concatenate([dataset["com"] for dataset in datasets])
 
-    data = [dataR, dataZ, dataMono, dataEsp, dataVDW, dataNgrid, dataid]
-    keys = ["R", "Z", "mono", "esp", "vdw_surface", "n_grid", "id"]
+    data = [
+        dataR,
+        dataZ,
+        dataN,
+        dataMono,
+        dataEsp,
+        dataVDW,
+        dataNgrid,
+        dataD,
+        dataDxyz,
+        dataCOM,
+        dataid,
+    ]
+    keys = [
+        "R",
+        "Z",
+        "N",
+        "mono",
+        "esp",
+        "vdw_surface",
+        "n_grid",
+        "D",
+        "Dxyz",
+        "com",
+        "id",
+    ]
     assert_dataset_size(dataR, num_train, num_valid)
     return data, keys
 
 
-def prepare_datasets(key, num_train, num_valid, filename=["esp2000.npz"]):
+def prepare_datasets(key, num_train, num_valid, filename):
     # Load the datasets
     if isinstance(filename, str):
         filename = [filename]
@@ -66,9 +94,9 @@ def get_choices(key, num_data, num_train, num_valid):
 def make_dicts(data, keys, train_choice, valid_choice):
     train_data, valid_data = dict(), dict()
 
-    for k in keys:
-        train_data[k] = data[k][train_choice]
-        valid_data[k] = data[k][valid_choice]
+    for i, k in enumerate(keys):
+        train_data[k] = data[i][train_choice]
+        valid_data[k] = data[i][valid_choice]
 
     return train_data, valid_data
 
@@ -98,41 +126,80 @@ def prepare_batches(key, data, batch_size, include_id=False):
     perms = perms.reshape((steps_per_epoch, batch_size))
 
     # Prepare entries that are identical for each batch.
-    num_atoms = len(data["atomic_numbers"][0])
+    num_atoms = 60
     batch_segments = jnp.repeat(jnp.arange(batch_size), num_atoms)
     offsets = jnp.arange(batch_size) * num_atoms
     dst_idx, src_idx = e3x.ops.sparse_pairwise_indices(num_atoms)
     dst_idx = (dst_idx + offsets[:, None]).reshape(-1)
     src_idx = (src_idx + offsets[:, None]).reshape(-1)
-    # Assemble and return batches.
+
+    output = []
+    data_keys = [
+        "R",
+        "Z",
+        "N",
+        "mono",
+        "esp",
+        "vdw_surface",
+        "n_grid",
+        "D",
+        "Dxyz",
+        "com",
+    ]
     if include_id:
-        return [
-            dict(
-                mono=data["mono"][perm].reshape(-1),
-                ngrid=data["ngrid"][perm].reshape(-1),
-                esp=data["esp"][perm],  # .reshape(-1),
-                vdw_surface=data["vdw_surface"][perm],  # .reshape(-1, 3),
-                atomic_numbers=data["atomic_numbers"][perm].reshape(-1),
-                positions=data["positions"][perm].reshape(-1, 3),
-                dst_idx=dst_idx,
-                src_idx=src_idx,
-                batch_segments=batch_segments,
-                id=data["id"][perm],
-            )
-            for perm in perms
-        ]
-    else:
-        return [
-            dict(
-                mono=data["mono"][perm].reshape(-1),
-                ngrid=data["ngrid"][perm].reshape(-1),
-                esp=data["esp"][perm],  # .reshape(-1),
-                vdw_surface=data["vdw_surface"][perm],  # .reshape(-1, 3),
-                atomic_numbers=data["atomic_numbers"][perm].reshape(-1),
-                positions=data["positions"][perm].reshape(-1, 3),
-                dst_idx=dst_idx,
-                src_idx=src_idx,
-                batch_segments=batch_segments,
-            )
-            for perm in perms
-        ]
+        data_keys.append("id")
+
+    for perm in perms:
+        dict_ = dict()
+        for k, v in data.items():
+            if k in data_keys:
+                if k == "R":
+                    dict_[k] = v[perm].reshape(-1, 3)
+                elif k == "Z":
+                    dict_[k] = v[perm].reshape(-1)
+                elif k == "mono":
+                    dict_[k] = v[perm].reshape(-1)
+
+                else:
+                    dict_[k] = v[perm]
+
+        dict_["dst_idx"] = dst_idx
+        dict_["src_idx"] = src_idx
+        dict_["batch_segments"] = batch_segments
+        output.append(dict_)
+
+    return output
+
+
+#    # Assemble and return batches.
+#    if include_id:
+#        return [
+#            dict(
+#                mono=data["mono"][perm].reshape(-1),
+#                ngrid=data["ngrid"][perm].reshape(-1),
+#                esp=data["esp"][perm],  # .reshape(-1),
+#                vdw_surface=data["vdw_surface"][perm],  # .reshape(-1, 3),
+#                atomic_numbers=data["Z"][perm].reshape(-1),
+#                positions=data["positions"][perm].reshape(-1, 3),
+#                dst_idx=dst_idx,
+#                src_idx=src_idx,
+#                batch_segments=batch_segments,
+#                id=data["id"][perm],
+#            )
+#            for perm in perms
+#        ]
+#    else:
+#        return [
+#            dict(
+#                mono=data["mono"][perm].reshape(-1),
+#                ngrid=data["ngrid"][perm].reshape(-1),
+#                esp=data["esp"][perm],  # .reshape(-1),
+#                vdw_surface=data["vdw_surface"][perm],  # .reshape(-1, 3),
+#                atomic_numbers=data["Z"][perm].reshape(-1),
+#                positions=data["positions"][perm].reshape(-1, 3),
+#                dst_idx=dst_idx,
+#                src_idx=src_idx,
+#                batch_segments=batch_segments,
+#            )
+#            for perm in perms
+#        ]

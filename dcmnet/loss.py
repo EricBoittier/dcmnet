@@ -1,14 +1,14 @@
 import functools
 
 import jax
-from dcmnet.electrostatics import batched_electrostatic_potential, calc_esp
-import optax
 import jax.numpy as jnp
 import numpy as np
+import optax
+from jax.random import randint
+
+from dcmnet.electrostatics import batched_electrostatic_potential, calc_esp
 from dcmnet.modules import NATOMS
 from dcmnet.utils import reshape_dipole
-
-from jax.random import randint
 
 
 def pred_dipole(dcm, com, q):
@@ -17,7 +17,6 @@ def pred_dipole(dcm, com, q):
         dipole_out += q[i] * (_ - com)
     return dipole_out * 1.88873
     # return jnp.linalg.norm(dipole_out)* 4.80320
-
 
 
 @functools.partial(jax.jit, static_argnames=("batch_size", "esp_w", "n_dcm"))
@@ -44,6 +43,7 @@ def esp_mono_loss(
     esp_loss = jnp.mean(l2_loss) * esp_w
     return esp_loss + mono_loss
 
+
 @functools.partial(jax.jit, static_argnames=("key", "batch_size", "esp_w", "n_dcm"))
 def dipo_esp_mono_loss(
     dipo_prediction,
@@ -66,13 +66,13 @@ def dipo_esp_mono_loss(
 
     # 0 the charges for dummy atoms
     n_atoms = n_atoms[0]
-    NDC = n_atoms*n_dcm
-    valid_atoms = jnp.where(jnp.arange(60*n_dcm) < NDC , 1, 0)
-    d = d[0] 
-    m = m[0]*valid_atoms
+    NDC = n_atoms * n_dcm
+    valid_atoms = jnp.where(jnp.arange(60 * n_dcm) < NDC, 1, 0)
+    d = d[0]
+    m = m[0] * valid_atoms
     # constrain the net charge to 0.0
-    avg_chg = m.sum()/NDC
-    m = (m - avg_chg)*valid_atoms
+    avg_chg = m.sum() / NDC
+    m = (m - avg_chg) * valid_atoms
 
     # monopole loss
     mono_prediction = m.reshape(NATOMS, n_dcm)
@@ -88,27 +88,29 @@ def dipo_esp_mono_loss(
     # esp_loss
     # batched_pred = batched_electrostatic_potential(d, m, vdw_surface)
     batched_pred = calc_esp(d, m, vdw_surface[0])
-    l2_loss = optax.l2_loss(batched_pred, esp_target[0]) 
+    l2_loss = optax.l2_loss(batched_pred, esp_target[0])
     # remove dummy grid points
     valid_grids = jnp.where(jnp.arange(3200) < ngrid[0], l2_loss, 0)
-    esp_loss_corrected = valid_grids.sum()/ngrid[0]
-    # jax.debug.print("{x} {y} {z}", x=esp_loss_corrected * esp_w, y=mono_loss_corrected, z=dipo_loss * 10)    
-    return esp_loss_corrected * esp_w  + mono_loss_corrected + dipo_loss * 10.0
+    esp_loss_corrected = valid_grids.sum() / ngrid[0]
+    # jax.debug.print("{x} {y} {z}", x=esp_loss_corrected * esp_w, y=mono_loss_corrected, z=dipo_loss * 10)
+    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss * 10.0
 
 
 def esp_mono_loss_pots(
     dipo_prediction, mono_prediction, vdw_surface, mono, batch_size, n_dcm
 ):
     """ """
-    d = dipo_prediction.reshape(batch_size, NATOMS, 3, n_dcm)
-    d = jnp.moveaxis(d, -1, -2)
-    d = d.reshape(batch_size, NATOMS * n_dcm, 3)
-    mono = jnp.repeat(mono.reshape(batch_size, NATOMS), n_dcm, axis=-1)
-    m = mono_prediction.reshape(batch_size, NATOMS * n_dcm)
+    # d = dipo_prediction.reshape(batch_size, NATOMS, 3, n_dcm)
+    # d = jnp.moveaxis(d, -1, -2)
+    # d = d.reshape(batch_size, NATOMS * n_dcm, 3)
+    # mono = jnp.repeat(mono.reshape(batch_size, NATOMS), n_dcm, axis=-1)
+    # m = mono_prediction.reshape(batch_size, NATOMS * n_dcm)
 
-    batched_pred = batched_electrostatic_potential(d, m, vdw_surface)
-
-    return batched_pred
+    # batched_pred = batched_electrostatic_potential(dipo_prediction, mono_prediction,  vdw_surface)
+    # return batched_pred
+    # for _ in [dipo_prediction, mono_prediction,  vdw_surface]:
+    #     print(_.shape)
+    return calc_esp(dipo_prediction, mono_prediction.reshape(batch_size, n_dcm*60),  vdw_surface)
 
 
 def esp_loss_pots(dipo_prediction, mono_prediction, vdw_surface, mono, batch_size):

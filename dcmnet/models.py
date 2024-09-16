@@ -19,8 +19,8 @@ dcm4_params = pd.read_pickle(
 # Model hyperparameters.
 features = 16
 max_degree = 2
-num_iterations = 3
-num_basis_functions = 16
+num_iterations = 2
+num_basis_functions = 8
 cutoff = 4.0
 
 # Create models

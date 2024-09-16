@@ -1,19 +1,18 @@
-import pickle
 import functools
-import jax
-import optax
-import jax.numpy as jnp
-from loss import esp_mono_loss
-from data import prepare_batches, prepare_datasets
+import pickle
+
 import e3x
+import jax
+import jax.numpy as jnp
+import optax
+from loss import esp_mono_loss
+
+from data import prepare_batches, prepare_datasets
 
 
 @functools.partial(
-    jax.jit, static_argnames=("model_apply",
-                              "optimizer_update",
-                              "batch_size",
-                              "esp_w",
-                              "ndcm")
+    jax.jit,
+    static_argnames=("model_apply", "optimizer_update", "batch_size", "esp_w", "ndcm"),
 )
 def train_step(
     model_apply, optimizer_update, batch, batch_size, opt_state, params, esp_w, ndcm
@@ -33,6 +32,8 @@ def train_step(
             vdw_surface=batch["vdw_surface"],
             esp_target=batch["esp"],
             mono=batch["mono"],
+            ngrid=batch["ngrid"],
+            key=batch["key"],
             batch_size=batch_size,
             esp_w=esp_w,
             n_dcm=ndcm,
@@ -45,7 +46,9 @@ def train_step(
     return params, opt_state, loss
 
 
-@functools.partial(jax.jit, static_argnames=("model_apply", "batch_size", "esp_w", "ndcm"))
+@functools.partial(
+    jax.jit, static_argnames=("model_apply", "batch_size", "esp_w", "ndcm")
+)
 def eval_step(model_apply, batch, batch_size, params, esp_w, ndcm):
     mono, dipo = model_apply(
         params,
@@ -62,6 +65,8 @@ def eval_step(model_apply, batch, batch_size, params, esp_w, ndcm):
         vdw_surface=batch["vdw_surface"],
         esp_target=batch["esp"],
         mono=batch["mono"],
+        ngrid=batch["ngrid"],
+        key=batch["key"],
         batch_size=batch_size,
         esp_w=esp_w,
         n_dcm=ndcm,
