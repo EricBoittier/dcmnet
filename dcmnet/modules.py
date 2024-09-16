@@ -3,6 +3,7 @@ import functools
 import e3x
 import flax.linen as nn
 import jax.numpy as jnp
+import jax
 
 NATOMS = 60
 
@@ -46,7 +47,7 @@ class MessagePassingModel(nn.Module):
                     max_degree=self.max_degree, include_pseudotensors=False
                 )(x, basis, dst_idx=dst_idx, src_idx=src_idx)
             else:
-                y = e3x.nn.MessagePass()(x, basis, dst_idx=dst_idx, src_idx=src_idx)
+                y = e3x.nn.MessagePass(include_pseudotensors=False)(x, basis, dst_idx=dst_idx, src_idx=src_idx)
             y = e3x.nn.add(x, y)
             # Atom-wise refinement MLP.
             y = e3x.nn.Dense(self.features)(y)
@@ -73,12 +74,14 @@ class MessagePassingModel(nn.Module):
             self.n_dcm,
             use_bias=False,
         )(atomic_mono)
+        
         atomic_mono = atomic_mono.squeeze(axis=1)
         atomic_mono = atomic_mono.squeeze(axis=1)
         atomic_mono += element_bias[atomic_numbers][:, None]
-
+        
+        x = e3x.nn.hard_tanh(x) * 0.173
+        # jax.debug.print("{x}", x=x)
         atomic_dipo = x[:, 1, 1:4, :]
-        atomic_dipo = e3x.nn.hard_tanh(atomic_dipo) * 0.173
         atomic_dipo += positions[:, :, None]
 
         return atomic_mono, atomic_dipo
