@@ -20,8 +20,8 @@ def train_step(
     def loss_fn(params):
         mono, dipo = model_apply(
             params,
-            atomic_numbers=batch["atomic_numbers"],
-            positions=batch["positions"],
+            atomic_numbers=batch["Z"],
+            positions=batch["R"],
             dst_idx=batch["dst_idx"],
             src_idx=batch["src_idx"],
             batch_segments=batch["batch_segments"],
@@ -32,8 +32,8 @@ def train_step(
             vdw_surface=batch["vdw_surface"],
             esp_target=batch["esp"],
             mono=batch["mono"],
-            ngrid=batch["ngrid"],
-            key=batch["key"],
+            ngrid=batch["n_grid"],
+            n_atoms=batch["N"],
             batch_size=batch_size,
             esp_w=esp_w,
             n_dcm=ndcm,
@@ -52,8 +52,8 @@ def train_step(
 def eval_step(model_apply, batch, batch_size, params, esp_w, ndcm):
     mono, dipo = model_apply(
         params,
-        atomic_numbers=batch["atomic_numbers"],
-        positions=batch["positions"],
+        atomic_numbers=batch["Z"],
+        positions=batch["R"],
         dst_idx=batch["dst_idx"],
         src_idx=batch["src_idx"],
         batch_segments=batch["batch_segments"],
@@ -65,8 +65,8 @@ def eval_step(model_apply, batch, batch_size, params, esp_w, ndcm):
         vdw_surface=batch["vdw_surface"],
         esp_target=batch["esp"],
         mono=batch["mono"],
-        ngrid=batch["ngrid"],
-        key=batch["key"],
+        ngrid=batch["n_grid"],
+        n_atoms=batch["N"],
         batch_size=batch_size,
         esp_w=esp_w,
         n_dcm=ndcm,
@@ -91,13 +91,11 @@ def train_model(
     # Initialize model parameters and optimizer state.
     key, init_key = jax.random.split(key)
     optimizer = optax.adam(learning_rate)
-    dst_idx, src_idx = e3x.ops.sparse_pairwise_indices(
-        len(train_data["atomic_numbers"][0])
-    )
+    dst_idx, src_idx = e3x.ops.sparse_pairwise_indices(len(train_data["Z"][0]))
     params = model.init(
         init_key,
-        atomic_numbers=train_data["atomic_numbers"][0],
-        positions=train_data["positions"][0],
+        atomic_numbers=train_data["Z"][0],
+        positions=train_data["R"][0],
         dst_idx=dst_idx,
         src_idx=src_idx,
     )
