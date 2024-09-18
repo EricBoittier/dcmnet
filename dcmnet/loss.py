@@ -68,7 +68,7 @@ def esp_mono_loss(
     # remove dummy grid points
     valid_grids = jnp.where(jnp.arange(3200) < ngrid[0], l2_loss, 0)
     esp_loss_corrected = valid_grids.sum() / ngrid[0]
-    return esp_loss_corrected * esp_w + mono_loss_corrected 
+    return esp_loss_corrected * esp_w + mono_loss_corrected
 
 
 @functools.partial(jax.jit, static_argnames=("batch_size", "esp_w", "n_dcm"))
@@ -119,14 +119,16 @@ def dipo_esp_mono_loss(
     valid_grids = jnp.where(jnp.arange(3200) < ngrid[0], l2_loss, 0)
     esp_loss_corrected = valid_grids.sum() / ngrid[0]
     # jax.debug.print("{x} {y} {z}", x=esp_loss_corrected * esp_w, y=mono_loss_corrected, z=dipo_loss * 10)
-    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss 
+    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss
 
 
 def esp_mono_loss_pots(
     dipo_prediction, mono_prediction, vdw_surface, mono, batch_size, n_dcm
 ):
     """ """
-    return calc_esp(dipo_prediction, mono_prediction.reshape(batch_size, n_dcm*60),  vdw_surface)
+    return calc_esp(
+        dipo_prediction, mono_prediction.reshape(batch_size, n_dcm * 60), vdw_surface
+    )
 
 
 def esp_loss_pots(dipo_prediction, mono_prediction, vdw_surface, mono, batch_size):
