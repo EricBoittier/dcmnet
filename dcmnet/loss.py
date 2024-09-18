@@ -119,7 +119,7 @@ def dipo_esp_mono_loss(
     valid_grids = jnp.where(jnp.arange(3200) < ngrid[0], l2_loss, 0)
     esp_loss_corrected = valid_grids.sum() / ngrid[0]
     # jax.debug.print("{x} {y} {z}", x=esp_loss_corrected * esp_w, y=mono_loss_corrected, z=dipo_loss * 10)
-    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss * 10.0
+    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss 
 
 
 def esp_mono_loss_pots(
