@@ -29,7 +29,6 @@ max_degree = 2
 num_iterations = 2
 num_basis_functions = 8
 cutoff = 4.0
-n_dcm = 2
 
 
 def create_model(n_dcm):
@@ -47,11 +46,12 @@ def create_model_and_params(path):
     """ """
     if type(path) == str:
         path = Path(path)
-    n_dcm = str(path).find("dcm-") + 4
-    n_dcm = int(str(path)[n_dcm])
-    # raise an exception if dcm is not found
-    if n_dcm == 3:
+    n_dcm = str(path).find("dcm-")
+    if n_dcm == -1:
         raise ValueError("DCM model not found")
+    n_dcm = int(str(path)[n_dcm + 4])
+    # raise an exception if dcm is not found
+
     params = pd.read_pickle(path)
     model = create_model(n_dcm)
     return model, params
@@ -76,7 +76,9 @@ def read_output(JOBNAME):
 
 def cut_vdw(grid, xyz, elements, vdw_scale=2.0):
     """ """
-    vdw_radii = [ase.data.vdw_radii[ase.data.atomic_numbers[s]] for s in elements]
+    if type(elements[0]) == str:
+        elements = [ase.data.atomic_numbers[s] for s in elements]
+    vdw_radii = [ase.data.vdw_radii[s] for s in elements]
     vdw_radii = np.array(vdw_radii) * vdw_scale
     distances = cdist(grid, xyz)
     mask = distances < vdw_radii
@@ -176,6 +178,7 @@ def multipoles_analysis(outdata: dict):
         "mono": mono,
         "dipo": dipo,
         "quad": quad,
+        "esp": esp,
         "closest_atom_type": closest_atom_type,
         "mask": mask,
         "rmse_mono": rmse_mono,
@@ -202,16 +205,23 @@ def dcmnet_analysis(params, model, batch):
     """"""
     mono, dipo = apply_model(model, params, batch, 1)
     esp_dc_pred = esp_mono_loss_pots(
-        dipo, mono, batch["vdw_surface"][0], batch["mono"], 1, 2
+        dipo, mono, batch["vdw_surface"][0], batch["mono"], 1, model.n_dcm
     )
     D = pred_dipole(dipo, batch["com"], mono.reshape(60 * model.n_dcm))
-    D_mae = jnp.mean(jnp.abs(D - batch["D"])) * au_to_debye
+    D_mae = jnp.mean(jnp.abs(D - batch["Dxyz"])) * au_to_debye
+    mask, closest_atom_type = cut_vdw(batch["vdw_surface"][0], batch["R"], batch["Z"])
+    rmse_model = rmse(batch["esp"][0], esp_dc_pred[0])
+    rmse_model_masked = rmse(batch["esp"][0][mask], esp_dc_pred[0][mask])
     output_data = {
         "mono": mono,
         "dipo": dipo,
-        "D": D,
+        "D_xyz_pred": D,
         "D_mae": D_mae,
         "esp_pred": esp_dc_pred[0],
+        "mask": mask,
+        "closest_atom_type": closest_atom_type,
+        "rmse_model": rmse_model,
+        "rmse_model_masked": rmse_model_masked,
     }
     return output_data
 
@@ -221,6 +231,7 @@ def multipoles(path: Path):
     outdata = prepare_mulitpoles_data(path)
     output = multipoles_analysis(outdata)
     save_output(output, path)
+    return output
 
 
 def dcmnet(path: Path, params_path: Path):
@@ -228,10 +239,8 @@ def dcmnet(path: Path, params_path: Path):
     model, params = create_model_and_params(params_path)
     batch = prepare_batch(path)
     output = dcmnet_analysis(params, model, batch)
-
-    # save as pickle
-    output["params"] = params
     save_output(output, path, params_path)
+    return output
 
 
 def save_output(output, path, params_path=None):
