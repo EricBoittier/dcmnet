@@ -211,7 +211,7 @@ def calc_quad_esp(data):
         for grid_point in range(data["grid"].shape[0]):
             r = (data["grid"][grid_point] - data["xyz"][i]) * 1.8897259886
             r_norm = np.linalg.norm(r)
-            v = np.dot(r, np.dot(data["quadrupoles"][i], r)) / (2 * r_norm**5)
+            v = np.dot(r, np.dot(data["quadrupoles"][i] , r)) / (2 * r_norm**5)
             calc_esp[grid_point] += v
     return calc_esp
 
