@@ -6,7 +6,7 @@ from rdkit.Chem import Draw
 import ase
 import pandas as pd
 
-df = pd.read_csv("/home/boittier/jaxeq/data/qm9.csv")
+df = pd.read_csv("/pchem-data/meuwly/boittier/home/jaxeq/data/qm9.csv")
 
 from rdkit.Chem import MolFromSmiles
 

@@ -5,9 +5,8 @@ import e3x
 import jax
 import jax.numpy as jnp
 import optax
-from loss import dipo_esp_mono_loss
-
-from data import prepare_batches, prepare_datasets
+from dcmnet.loss import dipo_esp_mono_loss
+from dcmnet.data import prepare_batches, prepare_datasets
 
 
 @functools.partial(
@@ -34,7 +33,7 @@ def train_step_dipo(
             mono=batch["mono"],
             Dxyz=batch["Dxyz"],
             com=batch["com"],
-            ngrid=batch["n_grid"],
+            espMask=batch["espMask"],
             n_atoms=batch["N"],
             batch_size=batch_size,
             esp_w=esp_w,
@@ -69,7 +68,7 @@ def eval_step_dipo(model_apply, batch, batch_size, params, esp_w, ndcm):
         mono=batch["mono"],
         Dxyz=batch["Dxyz"],
         com=batch["com"],
-        ngrid=batch["n_grid"],
+        espMask=batch["espMask"],
         n_atoms=batch["N"],
         batch_size=batch_size,
         esp_w=esp_w,
@@ -133,7 +132,8 @@ def train_model_dipo(
                 ndcm=ndcm,
             )
             train_loss += (loss - train_loss) / (i + 1)
-
+            
+        del train_batches
         # Evaluate on validation set.
         valid_loss = 0.0
         for i, batch in enumerate(valid_batches):

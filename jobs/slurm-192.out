@@ -1,0 +1,103 @@
+gpu01
+no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/activate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/deactivate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.sh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/fish/conf.d/conda.fish
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/Conda.psm1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/conda-hook.ps1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/lib/python3.12/site-packages/xontrib/conda.xsh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.csh
+no change     /pchem-data/meuwly/boittier/home/.bashrc
+No action taken.
+/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
+GPU ID: 0
+['/pchem-data/meuwly/boittier/home/jaxeq/dcmnet', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python39.zip', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/lib-dynload', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages', '/pchem-data/meuwly/boittier/home/jaxeq']
+args:
+data_dir = /pchem-data/meuwly/boittier/home/jaxeq/
+model_dir = model
+num_epochs = 10000
+learning_rate = 0.0001
+batch_size = 16
+esp_w = 10.0
+num_epics = 1
+n_feat = 16
+n_basis = 16
+max_degree = 2
+n_mp = 2
+restart = None
+random_seed = 32007
+n_dcm = 2
+n_gpu = 0
+data = qm9-esp40000-0.npz
+n_train = 64000
+n_valid = 8000
+type = default
+[cuda(id=0)]
+gpu
+[cuda(id=0)]
+R (40000, 60, 3)
+Z (40000, 60)
+N (40000,)
+D (40000,)
+com (40000, 3)
+Dxyz (40000, 3)
+mono (40000, 60, 1)
+esp (40000, 3200)
+id (40000,)
+n_grid (40000,)
+vdw_surface (40000, 3200, 3)
+R (40000, 60, 3)
+Z (40000, 60)
+N (40000,)
+D (40000,)
+com (40000, 3)
+Dxyz (40000, 3)
+mono (40000, 60, 1)
+esp (40000, 3200)
+id (40000,)
+n_grid (40000,)
+vdw_surface (40000, 3200, 3)
+R (40000, 60, 3)
+Z (40000, 60)
+N (40000,)
+D (40000,)
+com (40000, 3)
+Dxyz (40000, 3)
+mono (40000, 60, 1)
+esp (40000, 3200)
+id (40000,)
+n_grid (40000,)
+vdw_surface (40000, 3200, 3)
+creating_mask
+120000
+/pchem-data/meuwly/boittier/home/jaxeq/runs10/20240923-165106dcm-2-espw-10.0-restart-False
+epic 1
+Preparing batches
+..................
+jax.errors.SimplifiedTraceback: For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/main.py", line 121, in <module>
+    params, val = training(
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/training.py", line 121, in train_model
+    params, opt_state, loss = train_step(
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/training.py", line 43, in train_step
+    (loss, (mono, dipo)), grad = jax.value_and_grad(loss_fn, has_aux=True)(params)
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/training.py", line 29, in loss_fn
+    loss = esp_mono_loss(
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/loss.py", line 61, in esp_mono_loss
+    l2_loss_mono = optax.l2_loss(sum_of_dc_monopoles, mono)
+  File "/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages/optax/losses/_regression.py", line 77, in l2_loss
+    return 0.5 * squared_error(predictions, targets)
+  File "/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages/optax/losses/_regression.py", line 52, in squared_error
+    chex.assert_equal_shape((predictions, targets))
+  File "/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages/chex/_src/asserts_internal.py", line 278, in _chex_assert_fn
+    host_assertion_fn(
+  File "/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages/chex/_src/asserts_internal.py", line 196, in _assert_on_host
+    raise exception_type(error_msg)
+AssertionError: [Chex] Assertion assert_equal_shape failed: Arrays have different shapes: [(60,), (480,)].

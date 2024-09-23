@@ -2,7 +2,21 @@ import e3x
 import jax
 import jax.numpy as jnp
 import numpy as np
+import ase.data
+from scipy.spatial.distance import cdist
 
+def cut_vdw(grid, xyz, elements, vdw_scale=2.0):
+    """ """
+    if type(elements[0]) == str:
+        elements = [ase.data.atomic_numbers[s] for s in elements]
+    vdw_radii = [ase.data.vdw_radii[s] for s in elements]
+    vdw_radii = np.array(vdw_radii) * vdw_scale
+    distances = cdist(grid, xyz)
+    mask = distances < vdw_radii
+    closest_atom = np.argmin(distances, axis=1)
+    closest_atom_type = elements[closest_atom]
+    mask = ~mask.any(axis=1)
+    return mask, closest_atom_type
 
 def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"]):
     """
@@ -35,6 +49,8 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
     dataD = np.concatenate([dataset["D"] for dataset in datasets])
     dataDxyz = np.concatenate([dataset["Dxyz"] for dataset in datasets])
     dataCOM = np.concatenate([dataset["com"] for dataset in datasets])
+    print("creating_mask")
+    dataESPmask = np.array([cut_vdw(dataVDW[i], dataR[i], dataZ[i])[0] for i in range(len(dataZ))])
 
     data = [
         dataR,
@@ -47,6 +63,7 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
         dataD,
         dataDxyz,
         dataCOM,
+        dataESPmask,
         dataid,
     ]
     keys = [
@@ -60,6 +77,7 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
         "D",
         "Dxyz",
         "com",
+        "espMask",
         "id",
     ]
     assert_dataset_size(dataR, num_train, num_valid)
@@ -226,6 +244,7 @@ def prepare_batches(key, data, batch_size, include_id=False, data_keys=None) -> 
         "n_grid",
         "D",
         "Dxyz",
+        "espMask",
         "com",
     ]
     if include_id:

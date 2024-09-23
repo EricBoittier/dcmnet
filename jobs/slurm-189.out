@@ -1,0 +1,47 @@
+gpu01
+no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/activate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/deactivate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.sh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/fish/conf.d/conda.fish
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/Conda.psm1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/conda-hook.ps1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/lib/python3.12/site-packages/xontrib/conda.xsh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.csh
+no change     /pchem-data/meuwly/boittier/home/.bashrc
+No action taken.
+/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
+['/pchem-data/meuwly/boittier/home/jaxeq/dcmnet', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python39.zip', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/lib-dynload', '/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages', '/pchem-data/meuwly/boittier/home/jaxeq']
+args:
+data_dir = /home/boittier/jaxeq/data
+model_dir = model
+num_epochs = 10000
+learning_rate = 0.0001
+batch_size = 16
+esp_w = 10.0
+num_epics = 1
+restart = None
+random_seed = 0
+n_dcm = 2
+n_gpu = 0
+data = qm9-esp40000-0.npz
+ntrain = 32000
+nvalid = 8000
+type = default
+[cuda(id=0)]
+gpu
+[cuda(id=0)]
+Traceback (most recent call last):
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/main.py", line 81, in <module>
+    train_data, valid_data = prepare_datasets(
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/data.py", line 104, in prepare_datasets
+    data, keys = prepare_multiple_datasets(key, num_train, num_valid, filename)
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/data.py", line 35, in prepare_multiple_datasets
+    datasets = [np.load(f) for f in filename]
+  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/data.py", line 35, in <listcomp>
+    datasets = [np.load(f) for f in filename]
+  File "/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/lib/python3.9/site-packages/numpy/lib/_npyio_impl.py", line 455, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+FileNotFoundError: [Errno 2] No such file or directory: '/home/boittier/jaxeq/data/data/qm9-esp-dip-40000-0.npz'

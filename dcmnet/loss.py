@@ -80,7 +80,7 @@ def dipo_esp_mono_loss(
     mono,
     Dxyz,
     com,
-    ngrid,
+    espMask,
     n_atoms,
     batch_size,
     esp_w,
@@ -116,10 +116,10 @@ def dipo_esp_mono_loss(
     batched_pred = calc_esp(d, m, vdw_surface[0])
     l2_loss = optax.l2_loss(batched_pred, esp_target[0])
     # remove dummy grid points
-    valid_grids = jnp.where(jnp.arange(3200) < ngrid[0], l2_loss, 0)
-    esp_loss_corrected = valid_grids.sum() / ngrid[0]
+    valid_grids = jnp.where(espMask[0], l2_loss, 0)
+    esp_loss_corrected = valid_grids.sum() / espMask[0].sum()
     # jax.debug.print("{x} {y} {z}", x=esp_loss_corrected * esp_w, y=mono_loss_corrected, z=dipo_loss * 10)
-    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss
+    return esp_loss_corrected * esp_w + mono_loss_corrected + dipo_loss * 100.0
 
 
 def esp_mono_loss_pots(

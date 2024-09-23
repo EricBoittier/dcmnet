@@ -5,9 +5,9 @@ import e3x
 import jax
 import jax.numpy as jnp
 import optax
-from loss import esp_mono_loss
+from dcmnet.loss import esp_mono_loss
 
-from data import prepare_batches, prepare_datasets
+from dcmnet.data import prepare_batches, prepare_datasets
 
 
 @functools.partial(

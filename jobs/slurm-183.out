@@ -1,0 +1,18 @@
+gpu01
+no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/activate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/deactivate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.sh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/fish/conf.d/conda.fish
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/Conda.psm1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/conda-hook.ps1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/lib/python3.12/site-packages/xontrib/conda.xsh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.csh
+no change     /pchem-data/meuwly/boittier/home/.bashrc
+No action taken.
+
+EnvironmentLocationNotFound: Not a conda environment: /home/boittier/psi4conda/envs/jaxe3xcuda11py39
+
+/pchem-data/meuwly/boittier/home/miniforge3/bin/python

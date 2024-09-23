@@ -8,7 +8,7 @@ import pandas as pd
 from jax import vmap
 from scipy.spatial.distance import cdist
 
-from dcmnet.data import prepare_batches
+from dcmnet.data import prepare_batches, cut_vdw
 from dcmnet.loss import esp_mono_loss_pots, pred_dipole
 from dcmnet.modules import MessagePassingModel
 from dcmnet.multipoles import calc_esp_from_multipoles
@@ -74,18 +74,6 @@ def read_output(JOBNAME):
     return mag, np.array([dX, dY, dZ])
 
 
-def cut_vdw(grid, xyz, elements, vdw_scale=2.0):
-    """ """
-    if type(elements[0]) == str:
-        elements = [ase.data.atomic_numbers[s] for s in elements]
-    vdw_radii = [ase.data.vdw_radii[s] for s in elements]
-    vdw_radii = np.array(vdw_radii) * vdw_scale
-    distances = cdist(grid, xyz)
-    mask = distances < vdw_radii
-    closest_atom = np.argmin(distances, axis=1)
-    closest_atom_type = elements[closest_atom]
-    mask = ~mask.any(axis=1)
-    return mask, closest_atom_type
 
 
 def make_traceless(Q):

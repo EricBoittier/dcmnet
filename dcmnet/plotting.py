@@ -22,7 +22,7 @@ plt.set_cmap("bwr")
 
 
 def evaluate_dc(
-    batch, dipo, mono, batch_size, nDCM, plot=False, rcut=100, rcut0=1.7, id=False
+    batch, dipo, mono, batch_size, nDCM, plot=False, id=False
 ):
 
     esp_dc_pred = esp_mono_loss_pots(
@@ -60,36 +60,21 @@ def evaluate_dc(
         mono_pred_ = monos_pred[mbID]
         non_zero = np.nonzero(mono_gt)
 
-        vdws = batch["vdw_surface"][mbID][: batch["n_grid"][mbID]]
-        if rcut0:
-            # print(vdws.shape, cdist(vdws, xyz).shape)
-            # print(np.all(cdist(vdws, xyz) >= (rcut0 - 1e-1), axis=-1))
-            rcut0_idx_bools = np.all(cdist(vdws, xyz) >= (rcut0 - 1e-1), axis=-1)
-            # vdws = vdws[]
-            # print(vdws[:10])
-        # print(vdws.shape)
-        diff = xyzs[mbID][:, None, :] - vdws[None, :, :]
-        r = np.linalg.norm(diff, axis=-1)
-        min_d = np.min(r, axis=-2)
-        wheremind = np.where(min_d < rcut, min_d, 0)
+        vdws = batch["vdw_surface"][mbID]
 
-        if rcut0:
-            idx_cut = np.nonzero(wheremind * rcut0_idx_bools)[0]
-        else:
-            idx_cut = np.nonzero(wheremind)[0]
-
+        idx_cut = batch["espMask"][0]
         loss1 = (
             esp_loss_eval(
-                esp_dc_pred[mbID][: batch["n_grid"][mbID]][idx_cut],
-                batch["esp"][mbID][: batch["n_grid"][mbID]][idx_cut],
+                esp_dc_pred[mbID][idx_cut],
+                batch["esp"][mbID][idx_cut],
                 batch["n_grid"][mbID],
             )
             * 627.509
         )
         loss2 = (
             esp_loss_eval(
-                mono_pred[mbID][: batch["n_grid"][mbID]][idx_cut],
-                batch["esp"][mbID][: batch["n_grid"][mbID]][idx_cut],
+                mono_pred[mbID][idx_cut],
+                batch["esp"][mbID][idx_cut],
                 batch["n_grid"][mbID],
             )
             * 627.509
@@ -138,15 +123,15 @@ def evaluate_dc(
             ax_scatter.set_ylabel("$q_\mathrm{dcmnet}$ [$e$]")
 
             ax_scatter2.scatter(
-                batch["esp"][mbID][: batch["n_grid"][mbID]],
-                esp_dc_pred[mbID][: batch["n_grid"][mbID]],
+                batch["esp"][mbID][idx_cut],
+                esp_dc_pred[mbID][idx_cut],
                 alpha=0.9,
                 s=0.1,
                 color="k",
             )
             ax_scatter3.scatter(
-                batch["esp"][mbID][: batch["n_grid"][mbID]],
-                mono_pred[mbID][: batch["n_grid"][mbID]],
+                batch["esp"][mbID][idx_cut],
+                mono_pred[mbID][idx_cut],
                 alpha=0.9,
                 s=0.1,
                 color="k",
@@ -165,8 +150,8 @@ def evaluate_dc(
             ax_rdkit.axis("off")
 
             s = ax1.scatter(
-                *batch["vdw_surface"][mbID][: batch["n_grid"][mbID]][idx_cut].T,
-                c=clip_colors(batch["esp"][mbID][: batch["n_grid"][mbID]][idx_cut]),
+                *batch["vdw_surface"][mbID][idx_cut].T,
+                c=clip_colors(batch["esp"][mbID][idx_cut]),
                 vmin=-0.015,
                 vmax=0.015,
             )
@@ -174,18 +159,18 @@ def evaluate_dc(
                 ax1.set_title(f"GT ({batch['id'][mbID]})")
 
             s = ax2.scatter(
-                *batch["vdw_surface"][mbID][: batch["n_grid"][mbID]][idx_cut].T,
-                c=clip_colors(esp_dc_pred[mbID][: batch["n_grid"][mbID]][idx_cut]),
+                *batch["vdw_surface"][mbID][idx_cut].T,
+                c=clip_colors(esp_dc_pred[mbID][idx_cut]),
                 vmin=-0.015,
                 vmax=0.015,
             )
             ax2.set_title(f"dcmnet: {loss1:.1f} (kcal/mol)/$e$")
 
             s = ax4.scatter(
-                *batch["vdw_surface"][mbID][: batch["n_grid"][mbID]][idx_cut].T,
+                *batch["vdw_surface"][mbID][idx_cut].T,
                 c=clip_colors(
-                    esp_dc_pred[mbID][: batch["n_grid"][mbID]][idx_cut]
-                    - batch["esp"][mbID][: batch["n_grid"][mbID]][idx_cut]
+                    esp_dc_pred[mbID][idx_cut]
+                    - batch["esp"][mbID][idx_cut]
                 ),
                 vmin=-0.015,
                 vmax=0.015,
@@ -201,16 +186,7 @@ def evaluate_dc(
             )
 
             import dcmnet.utils
-
-            # dipo_ = dipo.reshape(batch_size, 60 * nDCM, 3)[mbID]
-            # d = dcmnet.utils.reshape_dipole(dipo_, nDCM)
-
             d = dipo
-            # print(d.shape)
-            # print(mono.flatten().shape)
-
-            # import numpy as np
-            # import matplotlib.pyplot as plt
             from matplotlib import cm
             from matplotlib.colors import Normalize
 
@@ -265,18 +241,18 @@ def evaluate_dc(
             axmol3.axis("off")
 
             s = ax3.scatter(
-                *batch["vdw_surface"][mbID][: batch["n_grid"][mbID]][idx_cut].T,
-                c=clip_colors(mono_pred[mbID][: batch["n_grid"][mbID]][idx_cut]),
+                *batch["vdw_surface"][mbID][idx_cut].T,
+                c=clip_colors(mono_pred[mbID][idx_cut]),
                 vmin=-0.015,
                 vmax=0.015,
             )
             ax3.set_title(f"mono.: {loss2:.1f} (kcal/mol)/$e$")
 
             s = ax5.scatter(
-                *batch["vdw_surface"][mbID][: batch["n_grid"][mbID]][idx_cut].T,
+                *batch["vdw_surface"][mbID][idx_cut].T,
                 c=clip_colors(
-                    mono_pred[mbID][: batch["n_grid"][mbID]][idx_cut]
-                    - batch["esp"][mbID][: batch["n_grid"][mbID]][idx_cut]
+                    mono_pred[mbID][idx_cut]
+                    - batch["esp"][mbID][idx_cut]
                 ),
                 vmin=-0.015,
                 vmax=0.015,
@@ -298,7 +274,7 @@ def evaluate_dc(
             else:
                 key = ""
             plt.savefig(
-                f"/home/boittier/jaxeq/figures/summary-{plot}-{key}.pdf",
+                f"/pchem-data/meuwly/boittier/home/jaxeq/figures/summary-{plot}-{key}.pdf",
                 bbox_inches="tight",
             )
             plt.show()

@@ -1,0 +1,27 @@
+gpu01
+Lmod has detected the following error: The following module(s) are unknown:
+"gcc/gcc4.8.5-openmpi1.10-cuda9.2"
+
+Please check the spelling or version number. Also try "module spider ..."
+
+
+
+no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/activate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/deactivate
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.sh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/fish/conf.d/conda.fish
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/Conda.psm1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/shell/condabin/conda-hook.ps1
+no change     /pchem-data/meuwly/boittier/home/miniforge3/lib/python3.12/site-packages/xontrib/conda.xsh
+no change     /pchem-data/meuwly/boittier/home/miniforge3/etc/profile.d/conda.csh
+modified      /pchem-data/meuwly/boittier/home/.bashrc
+
+==> For changes to take effect, close and re-open your current shell. <==
+
+
+CondaError: Run 'conda init' before 'conda activate'
+
+/pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
