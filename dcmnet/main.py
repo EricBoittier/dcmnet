@@ -1,20 +1,3 @@
-import pandas as pd
-import dcmnet
-import sys
-
-# sys.path.append("/home/boittier/jaxeq/dcmnet")
-print(sys.path)
-from dcmnet.modules import MessagePassingModel
-from dcmnet.data import prepare_datasets
-import os
-import jax
-import pickle
-from tensorboardX import SummaryWriter
-import time
-from utils import safe_mkdir
-from dcmnet.training import train_model
-from dcmnet.training_dipole import train_model_dipo
-from pathlib import Path
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -22,10 +5,10 @@ if __name__ == "__main__":
     args = ArgumentParser()
     args.add_argument("--data_dir", type=str, default="/pchem-data/meuwly/boittier/home/jaxeq/")
     args.add_argument("--model_dir", type=str, default="model")
-    args.add_argument("--num_epochs", type=int, default=10000)
+    args.add_argument("--num_epochs", type=int, default=5000)
     args.add_argument("--learning_rate", type=float, default=0.0001)
     args.add_argument("--batch_size", type=int, default=1)
-    args.add_argument("--esp_w", type=float, default=10.0)
+    args.add_argument("--esp_w", type=float, default=10000.0)
     args.add_argument("--num_epics", type=int, default=1)
     args.add_argument("--n_feat", type=int, default=16)
     args.add_argument("--n_basis", type=int, default=16)
@@ -43,16 +26,32 @@ if __name__ == "__main__":
     print("args:")
     for k, v in vars(args).items():
         print(f"{k} = {v}")
-
-    training = train_model if args.type == "default" else train_model_dipo
-
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".95"
+        
+    import os
+    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".99"
     os.environ["CUDA_VISIBLE_DEVICES"] = args.n_gpu
+    import jax
     devices = jax.local_devices()
     print(devices)
     print(jax.default_backend())
     print(jax.devices())
 
+    import pandas as pd
+    import dcmnet
+    import sys
+    print(sys.path)
+    from dcmnet.modules import MessagePassingModel
+    from dcmnet.data import prepare_datasets
+    import pickle
+    from tensorboardX import SummaryWriter
+    import time
+    from utils import safe_mkdir
+    from dcmnet.training import train_model
+    from dcmnet.training_dipole import train_model_dipo
+    from pathlib import Path
+    
+    training = train_model if args.type == "default" else train_model_dipo
+    
     NATOMS = 60
     data_key, train_key = jax.random.split(jax.random.PRNGKey(args.random_seed), 2)
 
