@@ -5,6 +5,18 @@ import numpy as np
 
 
 def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"]):
+    """
+    Prepare multiple datasets for training and validation.
+
+    Args:
+        key: Random key for dataset shuffling.
+        num_train (int): Number of training samples.
+        num_valid (int): Number of validation samples.
+        filename (list): List of filenames to load datasets from.
+
+    Returns:
+        tuple: A tuple containing the prepared data and keys.
+    """
     # Load the datasets
     datasets = [np.load(f) for f in filename]
 
@@ -55,6 +67,18 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
 
 
 def prepare_datasets(key, num_train, num_valid, filename):
+    """
+    Prepare datasets for training and validation.
+
+    Args:
+        key: Random key for dataset shuffling.
+        num_train (int): Number of training samples.
+        num_valid (int): Number of validation samples.
+        filename (str or list): Filename(s) to load datasets from.
+
+    Returns:
+        tuple: A tuple containing train_data and valid_data dictionaries.
+    """
     # Load the datasets
     if isinstance(filename, str):
         filename = [filename]
@@ -69,6 +93,17 @@ def prepare_datasets(key, num_train, num_valid, filename):
 
 
 def assert_dataset_size(dataR, num_train, num_valid):
+    """
+    Assert that the dataset contains enough entries for training and validation.
+
+    Args:
+        dataR: The dataset to check.
+        num_train (int): Number of training samples.
+        num_valid (int): Number of validation samples.
+
+    Raises:
+        RuntimeError: If the dataset doesn't contain enough entries.
+    """
 
     # Make sure that the dataset contains enough entries.
     num_data = len(dataR)
@@ -82,6 +117,18 @@ def assert_dataset_size(dataR, num_train, num_valid):
 
 
 def get_choices(key, num_data, num_train, num_valid):
+    """
+    Randomly draw train and validation sets from the dataset.
+
+    Args:
+        key: Random key for shuffling.
+        num_data (int): Total number of data points.
+        num_train (int): Number of training samples.
+        num_valid (int): Number of validation samples.
+
+    Returns:
+        tuple: A tuple containing train_choice and valid_choice arrays.
+    """
     # Randomly draw train and validation sets from dataset.
     choice = np.asarray(
         jax.random.choice(key, num_data, shape=(num_data,), replace=False)
@@ -92,6 +139,18 @@ def get_choices(key, num_data, num_train, num_valid):
 
 
 def make_dicts(data, keys, train_choice, valid_choice):
+    """
+    Create dictionaries for train and validation data.
+
+    Args:
+        data (list): List of data arrays.
+        keys (list): List of keys for the data arrays.
+        train_choice (array): Indices for training data.
+        valid_choice (array): Indices for validation data.
+
+    Returns:
+        tuple: A tuple containing train_data and valid_data dictionaries.
+    """
     train_data, valid_data = dict(), dict()
 
     for i, k in enumerate(keys):
@@ -102,6 +161,16 @@ def make_dicts(data, keys, train_choice, valid_choice):
 
 
 def print_shapes(train_data, valid_data):
+    """
+    Print the shapes of train and validation data.
+
+    Args:
+        train_data (dict): Dictionary containing training data.
+        valid_data (dict): Dictionary containing validation data.
+
+    Returns:
+        tuple: A tuple containing train_data and valid_data dictionaries.
+    """
     print("...")
     print("...")
     for k, v in train_data.items():
@@ -113,7 +182,20 @@ def print_shapes(train_data, valid_data):
     return train_data, valid_data
 
 
-def prepare_batches(key, data, batch_size, include_id=False):
+def prepare_batches(key, data, batch_size, include_id=False, data_keys=None) -> list:
+    """
+    Prepare batches for training.
+
+    Args:
+        key: Random key for shuffling.
+        data (dict): Dictionary containing the dataset.
+        batch_size (int): Size of each batch.
+        include_id (bool): Whether to include ID in the output.
+        data_keys (list): List of keys to include in the output.
+
+    Returns:
+        list: A list of dictionaries, each representing a batch.
+    """
     # Determine the number of training steps per epoch.
     data_size = len(data["mono"])
     steps_per_epoch = data_size // batch_size
@@ -169,37 +251,3 @@ def prepare_batches(key, data, batch_size, include_id=False):
         output.append(dict_)
 
     return output
-
-
-#    # Assemble and return batches.
-#    if include_id:
-#        return [
-#            dict(
-#                mono=data["mono"][perm].reshape(-1),
-#                ngrid=data["ngrid"][perm].reshape(-1),
-#                esp=data["esp"][perm],  # .reshape(-1),
-#                vdw_surface=data["vdw_surface"][perm],  # .reshape(-1, 3),
-#                atomic_numbers=data["Z"][perm].reshape(-1),
-#                positions=data["positions"][perm].reshape(-1, 3),
-#                dst_idx=dst_idx,
-#                src_idx=src_idx,
-#                batch_segments=batch_segments,
-#                id=data["id"][perm],
-#            )
-#            for perm in perms
-#        ]
-#    else:
-#        return [
-#            dict(
-#                mono=data["mono"][perm].reshape(-1),
-#                ngrid=data["ngrid"][perm].reshape(-1),
-#                esp=data["esp"][perm],  # .reshape(-1),
-#                vdw_surface=data["vdw_surface"][perm],  # .reshape(-1, 3),
-#                atomic_numbers=data["Z"][perm].reshape(-1),
-#                positions=data["positions"][perm].reshape(-1, 3),
-#                dst_idx=dst_idx,
-#                src_idx=src_idx,
-#                batch_segments=batch_segments,
-#            )
-#            for perm in perms
-#        ]
