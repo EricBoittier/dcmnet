@@ -66,7 +66,7 @@ if __name__ == "__main__":
     n_dcm = args.n_dcm
     # Training hyperparameters.
     learning_rate = args.learning_rate
-    batch_size = 8
+    batch_size = args.batch_size
     esp_w = args.esp_w
     restart_params = args.restart
     if restart_params is not None:
