@@ -52,8 +52,14 @@ def parm_dict_from_path(path):
                 job_parms[_[0].strip()] = float(_[1].strip())
             except:
                 job_parms[_[0].strip()] = _[1].strip()
+                
     if "include_pseudotensors" not in job_parms.keys():
+        job_parms["include_pseudotensors"] = "False"
+    if job_parms["include_pseudotensors"] == "False":
         job_parms["include_pseudotensors"] = False
+    if job_parms["include_pseudotensors"] == "True":
+        job_parms["include_pseudotensors"] = True
+        
     return job_parms
 
 

@@ -14,3 +14,7 @@ no change     /pchem-data/meuwly/boittier/home/.bashrc
 No action taken.
 /pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
 GPU ID: 0
+2024-09-24 14:16:49.769437: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 15 configs for gemm_fusion_dot.2 on a single thread.
+2024-09-24 14:16:54.013887: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 25 configs for gemm_fusion_dot.2 on a single thread.
+2024-09-24 14:17:04.472179: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 19 configs for gemm_fusion_dot.2 on a single thread.
+2024-09-24 14:17:45.127671: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:810] Compiling 122 configs for 10 fusions on a single thread.

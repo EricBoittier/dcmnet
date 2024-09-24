@@ -47,7 +47,7 @@ class MessagePassingModel(nn.Module):
                     max_degree=self.max_degree, include_pseudotensors=False
                 )(x, basis, dst_idx=dst_idx, src_idx=src_idx)
             else:
-                y = e3x.nn.MessagePass(include_pseudotensors=True)(
+                y = e3x.nn.MessagePass(include_pseudotensors=self.include_pseudotensors)(
                     x, basis, dst_idx=dst_idx, src_idx=src_idx
                 )
             y = e3x.nn.add(x, y)
