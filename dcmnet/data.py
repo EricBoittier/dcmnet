@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import numpy as np
 import ase.data
 from scipy.spatial.distance import cdist
+import pandas as pd
 
 def cut_vdw(grid, xyz, elements, vdw_scale=2.0):
     """ """
@@ -18,7 +19,7 @@ def cut_vdw(grid, xyz, elements, vdw_scale=2.0):
     mask = ~mask.any(axis=1)
     return mask, closest_atom_type
 
-def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"]):
+def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"], clean=False):
     """
     Prepare multiple datasets for training and validation.
 
@@ -38,17 +39,29 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
         for k, v in dataset.items():
             print(k, v.shape)
 
-    dataR = np.concatenate([dataset["R"] for dataset in datasets])
-    dataZ = np.concatenate([dataset["Z"] for dataset in datasets])
-    dataN = np.concatenate([dataset["N"] for dataset in datasets])
-    dataMono = np.concatenate([dataset["mono"] for dataset in datasets])
-    dataEsp = np.concatenate([dataset["esp"] for dataset in datasets])
-    dataVDW = np.concatenate([dataset["vdw_surface"] for dataset in datasets])
-    dataNgrid = np.concatenate([dataset["n_grid"] for dataset in datasets])
     dataid = np.concatenate([dataset["id"] for dataset in datasets])
-    dataD = np.concatenate([dataset["D"] for dataset in datasets])
-    dataDxyz = np.concatenate([dataset["Dxyz"] for dataset in datasets])
-    dataCOM = np.concatenate([dataset["com"] for dataset in datasets])
+    if clean:
+        failed = pd.read_csv("/pchem-data/meuwly/boittier/home/jaxeq/data/qm9-fails.csv")
+        failed = list(failed["0"])
+        not_failed = [i for i in range(len(dataid)) if str(dataid[i]) not in failed ]
+        n_failed =  len(dataid) - len(not_failed)
+        print("n_failed:", n_failed)
+        num_train = max([0, num_train - n_failed])
+        if num_train == 0:
+            num_valid = max([0, num_valid - n_failed]) 
+        print(num_train, num_valid)
+        
+    dataid = dataid[not_failed]
+    dataR = np.concatenate([dataset["R"] for dataset in datasets])[not_failed]
+    dataZ = np.concatenate([dataset["Z"] for dataset in datasets])[not_failed]
+    dataN = np.concatenate([dataset["N"] for dataset in datasets])[not_failed]
+    dataMono = np.concatenate([dataset["mono"] for dataset in datasets])[not_failed]
+    dataEsp = np.concatenate([dataset["esp"] for dataset in datasets])[not_failed]
+    dataVDW = np.concatenate([dataset["vdw_surface"] for dataset in datasets])[not_failed]
+    dataNgrid = np.concatenate([dataset["n_grid"] for dataset in datasets])[not_failed]
+    dataD = np.concatenate([dataset["D"] for dataset in datasets])[not_failed]
+    dataDxyz = np.concatenate([dataset["Dxyz"] for dataset in datasets])[not_failed]
+    dataCOM = np.concatenate([dataset["com"] for dataset in datasets])[not_failed]
     print("creating_mask")
     dataESPmask = np.array([cut_vdw(dataVDW[i], dataR[i], dataZ[i])[0] for i in range(len(dataZ))])
 
@@ -81,10 +94,11 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
         "id",
     ]
     assert_dataset_size(dataR, num_train, num_valid)
-    return data, keys
+    
+    return data, keys, num_train, num_valid
 
 
-def prepare_datasets(key, num_train, num_valid, filename):
+def prepare_datasets(key, num_train, num_valid, filename, clean=False):
     """
     Prepare datasets for training and validation.
 
@@ -101,7 +115,7 @@ def prepare_datasets(key, num_train, num_valid, filename):
     if isinstance(filename, str):
         filename = [filename]
 
-    data, keys = prepare_multiple_datasets(key, num_train, num_valid, filename)
+    data, keys, num_train, num_valid = prepare_multiple_datasets(key, num_train, num_valid, filename, clean=clean)
 
     train_choice, valid_choice = get_choices(key, len(data[0]), num_train, num_valid)
 
@@ -122,7 +136,8 @@ def assert_dataset_size(dataR, num_train, num_valid):
     Raises:
         RuntimeError: If the dataset doesn't contain enough entries.
     """
-
+    assert num_train >= 0
+    assert num_valid >= 0
     # Make sure that the dataset contains enough entries.
     num_data = len(dataR)
     print(num_data)

@@ -1,4 +1,4 @@
-gpu01
+gpu02
 no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
 no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
 no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
@@ -14,27 +14,3 @@ no change     /pchem-data/meuwly/boittier/home/.bashrc
 No action taken.
 /pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
 GPU ID: 0
-args:
-data_dir = /pchem-data/meuwly/boittier/home/jaxeq/
-model_dir = model
-num_epochs = 5000
-learning_rate = 0.0001
-batch_size = 1
-esp_w = 10000.0
-num_epics = 1
-n_feat = 16
-n_basis = 16
-max_degree = 2
-n_mp = 2
-restart = None
-random_seed = 20589
-n_dcm = 2
-n_gpu = 0
-data = qm9-esp40000-0.npz
-n_train = 64000
-n_valid = 8000
-type = dipole
-Traceback (most recent call last):
-  File "/pchem-data/meuwly/boittier/home/jaxeq/dcmnet/main.py", line 30, in <module>
-    training = train_model if args.type == "default" else train_model_dipo
-NameError: name 'train_model_dipo' is not defined

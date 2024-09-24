@@ -18,5 +18,5 @@ conda activate jaxe3xcuda11p39
 
 which python
 echo "GPU ID:" $CUDA_VISIBLE_DEVICES
-python /pchem-data/meuwly/boittier/home/jaxeq/dcmnet/main.py --type "dipole" --random_seed $RANDOM --n_dcm 1 --n_gpu $CUDA_VISIBLE_DEVICES 
+python /pchem-data/meuwly/boittier/home/jaxeq/dcmnet/main.py --type "dipole" --random_seed $RANDOM --n_dcm 2 --n_gpu $CUDA_VISIBLE_DEVICES --include_pseudotensors  
 

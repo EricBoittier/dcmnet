@@ -31,15 +31,30 @@ num_basis_functions = 8
 cutoff = 4.0
 
 
-def create_model(n_dcm):
+def create_model(n_dcm=2, features=16, max_degree=2, num_iterations=2, num_basis_functions=16, cutoff=4.0,
+                include_pseudotensors=False):
     return MessagePassingModel(
-        features=features,
-        max_degree=max_degree,
-        num_iterations=num_iterations,
-        num_basis_functions=num_basis_functions,
-        cutoff=cutoff,
-        n_dcm=n_dcm,
+        features=int(features),
+        max_degree=int(max_degree),
+        num_iterations=int(num_iterations),
+        num_basis_functions=int(num_basis_functions),
+        cutoff=float(cutoff),
+        n_dcm=int(n_dcm),
+        include_pseudotensors=bool(include_pseudotensors),
     )
+
+def parm_dict_from_path(path):
+    list_ = [_.split("=") for _ in open(Path(path).parents[0] / "manifest.txt").readlines()]
+    job_parms = {}
+    for _ in list_:
+        if len(_) == 2:
+            try:
+                job_parms[_[0].strip()] = float(_[1].strip())
+            except:
+                job_parms[_[0].strip()] = _[1].strip()
+    if "include_pseudotensors" not in job_parms.keys():
+        job_parms["include_pseudotensors"] = False
+    return job_parms
 
 
 def create_model_and_params(path):
@@ -53,7 +68,11 @@ def create_model_and_params(path):
     # raise an exception if dcm is not found
 
     params = pd.read_pickle(path)
-    model = create_model(n_dcm)
+    job_parms = parm_dict_from_path(path)
+    job_args = ["n_dcm", "features", "max_degree", "num_iterations", "num_basis_functions", "cutoff", "include_pseudotensors"]
+    job_parms = {k:v for k,v in job_parms.items() if k in job_args}
+    print(job_parms)
+    model = create_model(**job_parms)
     return model, params
 
 

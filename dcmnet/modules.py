@@ -16,7 +16,7 @@ class MessagePassingModel(nn.Module):
     cutoff: float = 5.0
     max_atomic_number: int = 17
     n_dcm: int = 4
-
+    include_pseudotensors: bool = False
     def mono(
         self, atomic_numbers, positions, dst_idx, src_idx, batch_segments, batch_size
     ):
@@ -47,7 +47,7 @@ class MessagePassingModel(nn.Module):
                     max_degree=self.max_degree, include_pseudotensors=False
                 )(x, basis, dst_idx=dst_idx, src_idx=src_idx)
             else:
-                y = e3x.nn.MessagePass(include_pseudotensors=False)(
+                y = e3x.nn.MessagePass(include_pseudotensors=True)(
                     x, basis, dst_idx=dst_idx, src_idx=src_idx
                 )
             y = e3x.nn.add(x, y)
