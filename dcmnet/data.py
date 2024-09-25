@@ -46,9 +46,9 @@ def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"
         not_failed = [i for i in range(len(dataid)) if str(dataid[i]) not in failed ]
         n_failed =  len(dataid) - len(not_failed)
         print("n_failed:", n_failed)
-        num_train = max([0, num_train - n_failed])
+        num_train = int(max([0, num_train - n_failed]))
         if num_train == 0:
-            num_valid = max([0, num_valid - n_failed]) 
+            num_valid = int(max([0, num_valid - n_failed]) )
         print(num_train, num_valid)
         
     dataid = dataid[not_failed]
@@ -117,7 +117,7 @@ def prepare_datasets(key, num_train, num_valid, filename, clean=False):
 
     data, keys, num_train, num_valid = prepare_multiple_datasets(key, num_train, num_valid, filename, clean=clean)
 
-    train_choice, valid_choice = get_choices(key, len(data[0]), num_train, num_valid)
+    train_choice, valid_choice = get_choices(key, len(data[0]), int(num_train), int(num_valid))
 
     train_data, valid_data = make_dicts(data, keys, train_choice, valid_choice)
 

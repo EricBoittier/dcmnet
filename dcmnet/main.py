@@ -69,18 +69,31 @@ if __name__ == "__main__":
     batch_size = args.batch_size
     esp_w = args.esp_w
     restart_params = None
-    if args.restart is not None:
-        restart_params = pd.read_pickle(args.restart)
-        
     num_epochs = args.num_epochs
+    isRestart = args.restart is not None
+    
+    if isRestart:
+        from dcmnet.analysis import create_model_and_params
+        message_passing_model, restart_params = create_model_and_params(args.restart)
+    else:
+        # Create model.
+        message_passing_model = MessagePassingModel(
+            features=features,
+            max_degree=max_degree,
+            num_iterations=num_iterations,
+            num_basis_functions=num_basis_functions,
+            cutoff=cutoff,
+            n_dcm=n_dcm,
+            include_pseudotensors=include_pseudotensors,
+        )
+    
+    # load data
     data_file = Path(args.data_dir) / args.data
-
     data =     [
         Path(args.data_dir) / "data/qm9-esp-dip-40000-0.npz", 
         Path(args.data_dir) / "data/qm9-esp-dip-40000-1.npz", 
         Path(args.data_dir) / "data/qm9-esp-dip-40000-2.npz", 
     ]
-    
     train_data, valid_data = prepare_datasets(
     data_key,
     args.n_train,
@@ -88,30 +101,23 @@ if __name__ == "__main__":
     data,
     clean=True
     )
-
-    # Create and train model.
-    message_passing_model = MessagePassingModel(
-        features=features,
-        max_degree=max_degree,
-        num_iterations=num_iterations,
-        num_basis_functions=num_basis_functions,
-        cutoff=cutoff,
-        n_dcm=n_dcm,
-        include_pseudotensors=include_pseudotensors,
-    )
+    n_dcm = message_passing_model.n_dcm
+    args.n_dcm = n_dcm
+    args.n_train = len(train_data["Z"])
+    args.n_valid = len(valid_data["Z"])
 
     # make checkpoint directory
     safe_mkdir(f"/pchem-data/meuwly/boittier/home/jaxeq/checkpoints2/dcm{n_dcm}-{esp_w}")
-    isRestart = args.restart is not None
     # Set up TensorBoard writer
     log_dir = (
-        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/runs11/"
+        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/runs888/"
         + time.strftime("%Y%m%d-%H%M%S")
         + f"dcm-{n_dcm}-espw-{esp_w}-restart-{isRestart}"
     )
     safe_mkdir(log_dir)
     writer = SummaryWriter(log_dir)
     print(log_dir)
+    # make a note of the settings
     with open(log_dir + "/manifest.txt", "w") as f:
         f.write(str(message_passing_model))
         for k, v in vars(args).items():

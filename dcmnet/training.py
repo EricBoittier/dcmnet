@@ -86,6 +86,7 @@ def train_model(
     ndcm,
     esp_w=1.0,
     restart_params=None,
+    ema_decay=0.999  
 ):
     best = 10**7
     # Initialize model parameters and optimizer state.
@@ -103,13 +104,17 @@ def train_model(
         params = restart_params
 
     opt_state = optimizer.init(params)
-
+    # Initialize EMA parameters (a copy of the initial parameters)
+    ema_params = initialize_ema_params(params)
+    
     print("Preparing batches")
     print("..................")
     # Batches for the validation set need to be prepared only once.
     key, shuffle_key = jax.random.split(key)
     valid_batches = prepare_batches(shuffle_key, valid_data, batch_size)
 
+    print("Training")
+    print("..................")
     # Train for 'num_epochs' epochs.
     for epoch in range(1, num_epochs + 1):
         # Prepare batches.
@@ -128,6 +133,9 @@ def train_model(
                 esp_w=esp_w,
                 ndcm=ndcm,
             )
+
+            ema_params = update_ema_params(ema_params, params, ema_decay)
+            
             train_loss += (loss - train_loss) / (i + 1)
 
         # Evaluate on validation set.
@@ -137,7 +145,7 @@ def train_model(
                 model_apply=model.apply,
                 batch=batch,
                 batch_size=batch_size,
-                params=params,
+                params=ema_params,
                 esp_w=esp_w,
                 ndcm=ndcm,
             )
@@ -148,15 +156,15 @@ def train_model(
         print(f"    loss [a.u.]             {train_loss : 8.3e} {valid_loss : 8.3e}")
         # Log metrics
         writer.add_scalar("Loss/train", train_loss, epoch)
-        writer.add_scalar("RMSE/train", jnp.sqrt(2 * train_loss), epoch)
+        # writer.add_scalar("RMSE/train", jnp.sqrt(2 * train_loss), epoch)
         writer.add_scalar("Loss/valid", valid_loss, epoch)
-        writer.add_scalar("RMSE/valid", jnp.sqrt(2 * valid_loss), epoch)
+        # writer.add_scalar("RMSE/valid", jnp.sqrt(2 * valid_loss), epoch)
 
         if valid_loss < best:
             best = valid_loss
             # open a file, where you want to store the data
             with open(f"{writer.logdir}/best_{esp_w}_params.pkl", "wb") as file:
-                pickle.dump(params, file)
+                pickle.dump(ema_params, file)
 
     # Return final model parameters.
     return params, valid_loss
