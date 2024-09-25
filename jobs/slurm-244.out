@@ -14,3 +14,4 @@ no change     /pchem-data/meuwly/boittier/home/.bashrc
 No action taken.
 /pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
 GPU ID: 0
+slurmstepd: error: *** JOB 244 ON gpu14 CANCELLED AT 2024-09-25T12:23:47 ***

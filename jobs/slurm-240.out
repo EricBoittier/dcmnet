@@ -18,3 +18,4 @@ GPU ID: 0
 2024-09-24 14:14:47.419234: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 25 configs for gemm_fusion_dot.2 on a single thread.
 2024-09-24 14:14:57.833640: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 19 configs for gemm_fusion_dot.2 on a single thread.
 2024-09-24 14:15:38.835810: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:810] Compiling 138 configs for 10 fusions on a single thread.
+slurmstepd: error: *** JOB 240 ON gpu02 CANCELLED AT 2024-09-25T12:23:47 ***

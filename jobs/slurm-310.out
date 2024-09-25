@@ -1,4 +1,4 @@
-gpu18
+gpu12
 no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
 no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
 no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
@@ -14,8 +14,14 @@ no change     /pchem-data/meuwly/boittier/home/.bashrc
 No action taken.
 /pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
 GPU ID: 0
-2024-09-24 14:21:27.354692: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 15 configs for gemm_fusion_dot.2 on a single thread.
-2024-09-24 14:21:31.302842: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 25 configs for gemm_fusion_dot.2 on a single thread.
-2024-09-24 14:21:41.658687: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 19 configs for gemm_fusion_dot.2 on a single thread.
-2024-09-24 14:22:22.677828: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:810] Compiling 138 configs for 10 fusions on a single thread.
-slurmstepd: error: *** JOB 241 ON gpu18 CANCELLED AT 2024-09-25T12:23:47 ***
+restart
+usage: main.py [-h] [--data_dir DATA_DIR] [--model_dir MODEL_DIR]
+               [--num_epochs NUM_EPOCHS] [--learning_rate LEARNING_RATE]
+               [--batch_size BATCH_SIZE] [--esp_w ESP_W]
+               [--num_epics NUM_EPICS] [--n_feat N_FEAT] [--n_basis N_BASIS]
+               [--max_degree MAX_DEGREE] [--n_mp N_MP] [--restart RESTART]
+               [--random_seed RANDOM_SEED] [--n_dcm N_DCM] [--n_gpu N_GPU]
+               [--data DATA] [--n_train N_TRAIN] [--n_valid N_VALID]
+               [--type TYPE]
+               [--include_pseudotensors | --no-include_pseudotensors]
+main.py: error: argument --restart: expected one argument

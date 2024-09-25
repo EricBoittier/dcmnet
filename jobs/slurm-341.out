@@ -1,4 +1,4 @@
-gpu18
+gpu12
 no change     /pchem-data/meuwly/boittier/home/miniforge3/condabin/conda
 no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda
 no change     /pchem-data/meuwly/boittier/home/miniforge3/bin/conda-env
@@ -14,8 +14,4 @@ no change     /pchem-data/meuwly/boittier/home/.bashrc
 No action taken.
 /pchem-data/meuwly/boittier/home/miniforge3/envs/jaxe3xcuda11p39/bin/python
 GPU ID: 0
-2024-09-24 14:21:27.354692: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 15 configs for gemm_fusion_dot.2 on a single thread.
-2024-09-24 14:21:31.302842: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 25 configs for gemm_fusion_dot.2 on a single thread.
-2024-09-24 14:21:41.658687: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:807] Compiling 19 configs for gemm_fusion_dot.2 on a single thread.
-2024-09-24 14:22:22.677828: W external/xla/xla/service/gpu/gemm_fusion_autotuner.cc:810] Compiling 138 configs for 10 fusions on a single thread.
-slurmstepd: error: *** JOB 241 ON gpu18 CANCELLED AT 2024-09-25T12:23:47 ***
+restart /pchem-data/meuwly/boittier/home/jaxeq/all_runs/runs11/20240924-142048dcm-4-espw-1000.0-restart-False/best_1000.0_params.pkl
