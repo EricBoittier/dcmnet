@@ -115,7 +115,7 @@ def train_step_dipo(
             src_idx=batch["src_idx"],
             batch_segments=batch["batch_segments"],
         )
-        loss = dipo_esp_mono_loss(
+        esp_l, mono_l, dipo_l = dipo_esp_mono_loss(
             dipo_prediction=dipo,
             mono_prediction=mono,
             vdw_surface=batch["vdw_surface"],
@@ -129,16 +129,17 @@ def train_step_dipo(
             esp_w=esp_w,
             n_dcm=ndcm,
         )
-        return loss, (mono, dipo)
+        loss = esp_l + mono_l + dipo_l
+        return loss, (mono, dipo, esp_l, mono_l, dipo_l)
 
-    (loss, (mono, dipo)), grad = jax.value_and_grad(loss_fn, has_aux=True)(params)
+    (loss, (mono, dipo, esp_l, mono_l, dipo_l)), grad = jax.value_and_grad(loss_fn, has_aux=True)(params)
 
     # Clip gradients by their global norm
     clipped_grads = clip_grads_by_global_norm(grad, clip_norm)
     updates, opt_state = optimizer_update(clipped_grads, opt_state, params)
     params = optax.apply_updates(params, updates)
     
-    return params, opt_state, loss
+    return params, opt_state, loss, esp_l, mono_l, dipo_l
 
 
 @functools.partial(
@@ -154,7 +155,7 @@ def eval_step_dipo(model_apply, batch, batch_size, params, esp_w, ndcm):
         batch_segments=batch["batch_segments"],
         batch_size=batch_size,
     )
-    loss = dipo_esp_mono_loss(
+    esp_l, mono_l, dipo_l = dipo_esp_mono_loss(
         dipo_prediction=dipo,
         mono_prediction=mono,
         vdw_surface=batch["vdw_surface"],
@@ -168,7 +169,8 @@ def eval_step_dipo(model_apply, batch, batch_size, params, esp_w, ndcm):
         esp_w=esp_w,
         n_dcm=ndcm,
     )
-    return loss
+    loss = esp_l + mono_l + dipo_l
+    return loss, esp_l, mono_l, dipo_l
 
 
 def train_model_dipo(
@@ -230,8 +232,11 @@ def train_model_dipo(
         train_batches = prepare_batches(shuffle_key, train_data, batch_size)
         # Loop over train batches.
         train_loss = 0.0
+        train_esp_l = 0.0
+        train_mono_l = 0.0
+        train_dipo_l = 0.0
         for i, batch in enumerate(train_batches):
-            params, opt_state, loss = train_step_dipo(
+            params, opt_state, loss, esp_l, mono_l, dipo_l = train_step_dipo(
                 model_apply=model.apply,
                 optimizer_update=optimizer.update,
                 batch=batch,
@@ -242,14 +247,19 @@ def train_model_dipo(
                 ndcm=ndcm,
             )
             train_loss += (loss - train_loss) / (i + 1)
-            # ema_params = update_ema_params(ema_params, params, ema_decay)
+            train_esp_l += (esp_l - train_esp_l) / (i + 1)
+            train_mono_l += (mono_l - train_mono_l) / (i + 1)
+            train_dipo_l += (dipo_l - train_dipo_l) / (i + 1)
             
         del train_batches
         
         # Evaluate on validation set.
         valid_loss = 0.0
+        valid_esp_l = 0.0
+        valid_mono_l = 0.0
+        valid_dipo_l = 0.0
         for i, batch in enumerate(valid_batches):
-            loss = eval_step_dipo(
+            loss, esp_l, mono_l, dipo_l = eval_step_dipo(
                 model_apply=model.apply,
                 batch=batch,
                 batch_size=batch_size,
@@ -258,15 +268,19 @@ def train_model_dipo(
                 ndcm=ndcm,
             )
             valid_loss += (loss - valid_loss) / (i + 1)
+            valid_esp_l += (esp_l - valid_esp_l) / (i + 1)
+            valid_mono_l += (mono_l - valid_mono_l) / (i + 1)
+            valid_dipo_l += (dipo_l - valid_dipo_l) / (i + 1)
 
-        # Print progress.
-        print(f"epoch: {epoch: 3d}      train:   valid:")
-        print(f"    loss [a.u.]             {train_loss : 8.3e} {valid_loss : 8.3e}")
         # Log metrics
         writer.add_scalar("Loss/train", train_loss, epoch)
-        writer.add_scalar("RMSE/train", jnp.sqrt(2 * train_loss), epoch)
         writer.add_scalar("Loss/valid", valid_loss, epoch)
-        writer.add_scalar("RMSE/valid", jnp.sqrt(2 * valid_loss), epoch)
+        writer.add_scalar("esp_l/train", train_esp_l, epoch)
+        writer.add_scalar("esp_l/valid", valid_esp_l, epoch)
+        writer.add_scalar("mono_l/train", train_mono_l, epoch)
+        writer.add_scalar("mono_l/valid", valid_mono_l, epoch)
+        writer.add_scalar("dipo_l/train", train_dipo_l, epoch)
+        writer.add_scalar("dipo_l/valid", valid_dipo_l, epoch)
 
         if valid_loss < best:
             best = valid_loss

@@ -2,8 +2,8 @@
 
 #SBATCH --job-name=test
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --mem-per-cpu=20000
+#SBATCH --ntasks=2
+#SBATCH --mem-per-cpu=10000
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 ##SBATCH --nodelist=gpu

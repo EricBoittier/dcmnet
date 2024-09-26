@@ -164,6 +164,8 @@ def multipoles_analysis(outdata: dict):
     mono, dipo, quad = calc_esp_from_multipoles(outdata)
     dipo = mono + dipo
     quad = dipo + quad
+    outdata["elements"] = np.array([ase.data.atomic_numbers[i] for i in outdata["elements"]])
+    # print(outdata)
     mask, closest_atom_type = cut_vdw(grid, outdata["xyz"], outdata["elements"])
 
     rmse_mono = rmse(esp, mono)
@@ -175,7 +177,7 @@ def multipoles_analysis(outdata: dict):
 
     masses = np.array(
         [
-            ase.data.atomic_masses[ase.data.atomic_numbers[s]]
+            ase.data.atomic_masses[s]
             for s in outdata["elements"]
         ]
     )

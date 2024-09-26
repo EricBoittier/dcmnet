@@ -6,7 +6,7 @@ import ase.data
 from scipy.spatial.distance import cdist
 import pandas as pd
 
-def cut_vdw(grid, xyz, elements, vdw_scale=2.0):
+def cut_vdw(grid, xyz, elements, vdw_scale=1.4):
     """ """
     if type(elements[0]) == str:
         elements = [ase.data.atomic_numbers[s] for s in elements]
