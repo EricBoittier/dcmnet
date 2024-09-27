@@ -10,7 +10,7 @@ from scipy.spatial.distance import cdist
 
 from dcmnet.data import prepare_batches, cut_vdw
 from dcmnet.loss import esp_mono_loss_pots, pred_dipole
-from dcmnet.modules import MessagePassingModel
+from dcmnet.modules import MessagePassingModel, MessagePassingModelDEBUG
 from dcmnet.multipoles import calc_esp_from_multipoles
 from dcmnet.utils import apply_model
 
@@ -32,8 +32,9 @@ cutoff = 4.0
 
 
 def create_model(n_dcm=2, features=16, max_degree=2, num_iterations=2, num_basis_functions=16, cutoff=4.0,
-                include_pseudotensors=False):
-    return MessagePassingModel(
+                include_pseudotensors=False, debug=False):
+    model_type = MessagePassingModel if not debug else MessagePassingModelDEBUG
+    return model_type(
         features=int(features),
         max_degree=int(max_degree),
         num_iterations=int(num_iterations),
@@ -63,7 +64,7 @@ def parm_dict_from_path(path):
     return job_parms
 
 
-def create_model_and_params(path):
+def create_model_and_params(path, debug=False):
     """ """
     if type(path) == str:
         path = Path(path)
@@ -77,6 +78,7 @@ def create_model_and_params(path):
     job_parms = parm_dict_from_path(path)
     job_args = ["n_dcm", "features", "max_degree", "num_iterations", "num_basis_functions", "cutoff", "include_pseudotensors"]
     job_parms = {k:v for k,v in job_parms.items() if k in job_args}
+    job_parms["debug"] = debug
     print(job_parms)
     model = create_model(**job_parms)
     return model, params

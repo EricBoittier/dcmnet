@@ -1,12 +1,15 @@
 
 if __name__ == "__main__":
-    from argparse import ArgumentParser
     import argparse
+    from argparse import ArgumentParser
+
     args = ArgumentParser()
-    args.add_argument("--data_dir", type=str, default="/pchem-data/meuwly/boittier/home/jaxeq/")
+    args.add_argument(
+        "--data_dir", type=str, default="/pchem-data/meuwly/boittier/home/jaxeq/"
+    )
     args.add_argument("--model_dir", type=str, default="model")
     args.add_argument("--num_epochs", type=int, default=5_000)
-    args.add_argument("--learning_rate", type=float, default=0.0001)
+    args.add_argument("--learning_rate", type=float, default=0.001)
     args.add_argument("--batch_size", type=int, default=1)
     args.add_argument("--esp_w", type=float, default=10000.0)
     args.add_argument("--num_epics", type=int, default=1)
@@ -19,17 +22,19 @@ if __name__ == "__main__":
     args.add_argument("--n_dcm", type=int, default=1)
     args.add_argument("--n_gpu", type=str, default="0")
     args.add_argument("--data", type=str, default="qm9-esp40000-0.npz")
-    args.add_argument("--n_train", type=int, default=100_000)
+    args.add_argument("--n_train", type=int, default=80_000)
     args.add_argument("--n_valid", type=int, default=2_000)
     args.add_argument("--type", type=str, default="default")
-    args.add_argument("--include_pseudotensors", default=False, action=argparse.BooleanOptionalAction)
+    args.add_argument(
+        "--include_pseudotensors", default=False, action=argparse.BooleanOptionalAction
+    )
     args = args.parse_args()
     print("args:")
     for k, v in vars(args).items():
         print(f"{k} = {v}")
-        
+
     import os
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".99"
+    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.95"
     os.environ["CUDA_VISIBLE_DEVICES"] = args.n_gpu
     import jax
     devices = jax.local_devices()
@@ -37,22 +42,28 @@ if __name__ == "__main__":
     print(jax.default_backend())
     print(jax.devices())
 
-    import pandas as pd
-    import dcmnet
     import sys
+
+
+    import pandas as pd
+
+    import dcmnet
+
     print(sys.path)
-    from dcmnet.modules import MessagePassingModel
-    from dcmnet.data import prepare_datasets
     import pickle
-    from tensorboardX import SummaryWriter
     import time
+    from pathlib import Path
+
+    from tensorboardX import SummaryWriter
     from utils import safe_mkdir
+
+    from dcmnet.data import prepare_datasets
+    from dcmnet.modules import MessagePassingModel
     from dcmnet.training import train_model
     from dcmnet.training_dipole import train_model_dipo
-    from pathlib import Path
-    
+
     training = train_model if args.type == "default" else train_model_dipo
-    
+
     NATOMS = 60
     data_key, train_key = jax.random.split(jax.random.PRNGKey(args.random_seed), 2)
 
@@ -71,9 +82,11 @@ if __name__ == "__main__":
     restart_params = None
     num_epochs = args.num_epochs
     isRestart = args.restart is not None
-    
+
+
     if isRestart:
         from dcmnet.analysis import create_model_and_params
+
         message_passing_model, restart_params = create_model_and_params(args.restart)
     else:
         # Create model.
@@ -86,28 +99,28 @@ if __name__ == "__main__":
             n_dcm=n_dcm,
             include_pseudotensors=include_pseudotensors,
         )
-    
+
     # load data
     data_file = Path(args.data_dir) / args.data
-    data =     [
-        Path(args.data_dir) / "data/qm9-esp-dip-40000-0.npz", 
-        Path(args.data_dir) / "data/qm9-esp-dip-40000-1.npz", 
-        Path(args.data_dir) / "data/qm9-esp-dip-40000-2.npz", 
+    data = [
+        Path(args.data_dir) / "data/qm9-esp-dip-40000-0.npz",
+        Path(args.data_dir) / "data/qm9-esp-dip-40000-1.npz",
+        Path(args.data_dir) / "data/qm9-esp-dip-40000-2.npz",
+        # Path(args.data_dir) / "data/qm9-esp-dip-6907-3.npz", 
     ]
     train_data, valid_data = prepare_datasets(
-    data_key,
-    args.n_train,
-    args.n_valid,
-    data,
-    clean=True
+        data_key, args.n_train, args.n_valid, data, clean=True
     )
     n_dcm = message_passing_model.n_dcm
     args.n_dcm = n_dcm
     args.n_train = len(train_data["Z"])
     args.n_valid = len(valid_data["Z"])
     args.data = "_".join([str(_) for _ in data])
+    
     # make checkpoint directory
-    safe_mkdir(f"/pchem-data/meuwly/boittier/home/jaxeq/checkpoints2/dcm{n_dcm}-{esp_w}")
+    safe_mkdir(
+        f"/pchem-data/meuwly/boittier/home/jaxeq/checkpoints2/dcm{n_dcm}-{esp_w}"
+    )
     # Set up TensorBoard writer
     log_dir = (
         "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/test2/"
@@ -138,4 +151,3 @@ if __name__ == "__main__":
             esp_w=esp_w,
             ndcm=n_dcm,
         )
-
