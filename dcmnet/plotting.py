@@ -179,10 +179,21 @@ def evaluate_dc(
             elem = elem[non_zero]
             mono_gt = mono_gt[non_zero]
             xyz = xyz[non_zero]
-
+            ROT = "45x,45y,-45z"
+            vdw = batch["vdw_surface"] 
+            no_dummy = batch["vdw_surface"] < 10000
+            max_vals = np.min(vdw * no_dummy, axis=1)
+            min_vals = np.max(vdw * no_dummy, axis=1)
+            Rmax_vals = np.min(xyz, axis=0)
+            Rmin_vals = np.max(xyz, axis=0)
+            translate = - xyz.mean(axis=0) + (max_vals - min_vals)/2
+            xyz = xyz + translate
+            CELL = (max_vals - min_vals) * np.eye(3)
+            
             atoms = ase.Atoms(
                 numbers=elem,
-                positions=xyz,
+                positions= xyz,
+                cell = CELL
             )
 
             import dcmnet.utils
@@ -205,11 +216,12 @@ def evaluate_dc(
 
             dcmol = ase.Atoms(
                 ["X" if not _ else "He" for _ in mono.flatten()[: len(elem) * nDCM]],
-                d[: len(elem) * nDCM],
+                d[: len(elem) * nDCM] + translate,
+                # cell = CELL,
             )
 
             plot_atoms(
-                atoms, axmol, rotation=("-45x,-45y,0z"), colors=pccolors, scale=1
+                atoms, axmol, rotation=(ROT), colors=pccolors, scale=1
             )
 
             axmol.axis("off")
@@ -225,8 +237,8 @@ def evaluate_dc(
                     )
                     for i, _ in enumerate(list(dcmcolors) + list(atomcolors_))
                 ],
-                rotation=("-45x,-45y,0z"),
-                scale=1,
+                rotation=(ROT),
+                scale=5,
             )
             axmol2.axis("off")
 
@@ -234,7 +246,7 @@ def evaluate_dc(
             plot_atoms(
                 atoms,
                 axmol3,
-                rotation=("-45x,-45y,0z"),
+                rotation=(ROT),
                 colors=list(atomcolors),
                 scale=1,
             )
@@ -259,6 +271,7 @@ def evaluate_dc(
             )
 
             for _ in [ax1, ax2, ax3, ax4, ax5]:
+                # _.set_proj_type('ortho')
                 _.set_xlim(-10, 10)
                 _.set_xlabel("$x~[\mathrm{\AA}]$")
                 _.set_ylim(-10, 10)

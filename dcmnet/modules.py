@@ -162,13 +162,17 @@ class MessagePassingModelDEBUG(nn.Module):
             # Residual connection.
             x = e3x.nn.add(x, y)
 
+        non_zero = jnp.nonzero(atomic_numbers)
+        jax.debug.print("x {x}",x=x[non_zero])
+        jax.debug.print("x {x}",x=x[non_zero].shape)
         x = e3x.nn.TensorDense(
             features=self.n_dcm,
             max_degree=1,
             include_pseudotensors=False,
         )(x)
         jax.debug.print("x {x}",x=x.shape)
-
+        jax.debug.print("x {x}",x=x[non_zero])
+        
         atomic_mono = e3x.nn.change_max_degree_or_type(
             x, max_degree=0, include_pseudotensors=False
         )
@@ -187,12 +191,12 @@ class MessagePassingModelDEBUG(nn.Module):
         atomic_mono = atomic_mono.squeeze(axis=1)
         atomic_mono += element_bias[atomic_numbers][:, None]
         jax.debug.print("atomic_mono {x}",x=atomic_mono.shape)
-
+        jax.debug.print("x {x}",x=x[non_zero])
         x = e3x.nn.hard_tanh(x) * 0.173
-        jax.debug.print("x {x}",x=x.shape)
+        jax.debug.print("xx {x}",x=x.shape)
         atomic_dipo = x[:, 1, 1:4, :]
-        jax.debug.print("atomic_dipo {x}",x=atomic_dipo.shape)
-        atomic_dipo += positions[:, :, None]
+        jax.debug.print("atomic_dipo {x}",x=atomic_dipo[non_zero])
+        # atomic_dipo += positions[:, :, None]
 
         return atomic_mono, atomic_dipo
 
