@@ -41,7 +41,8 @@ def create_model(n_dcm=2, features=16, max_degree=2, num_iterations=2, num_basis
         num_basis_functions=int(num_basis_functions),
         cutoff=float(cutoff),
         n_dcm=int(n_dcm),
-        include_pseudotensors=bool(include_pseudotensors),
+        # include_pseudotensors=bool(include_pseudotensors),
+        include_pseudotensors=True,
     )
 
 def parm_dict_from_path(path):
@@ -75,13 +76,13 @@ def create_model_and_params(path, debug=False):
     # raise an exception if dcm is not found
 
     params = pd.read_pickle(path)
-    job_parms = parm_dict_from_path(path)
+    job_parms_ = parm_dict_from_path(path)
     job_args = ["n_dcm", "features", "max_degree", "num_iterations", "num_basis_functions", "cutoff", "include_pseudotensors"]
-    job_parms = {k:v for k,v in job_parms.items() if k in job_args}
+    job_parms = {k:v for k,v in job_parms_.items() if k in job_args}
     job_parms["debug"] = debug
     print(job_parms)
     model = create_model(**job_parms)
-    return model, params
+    return model, params, job_parms_
 
 
 def read_output(JOBNAME):

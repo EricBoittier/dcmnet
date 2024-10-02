@@ -65,7 +65,6 @@ if __name__ == "__main__":
     training = train_model if args.type == "default" else train_model_dipo
 
     NATOMS = 60
-    data_key, train_key = jax.random.split(jax.random.PRNGKey(args.random_seed), 2)
 
     # Model hyperparameters.
     features = args.n_feat
@@ -87,7 +86,9 @@ if __name__ == "__main__":
     if isRestart:
         from dcmnet.analysis import create_model_and_params
 
-        message_passing_model, restart_params = create_model_and_params(args.restart)
+        message_passing_model, restart_params, job_parms = create_model_and_params(args.restart)
+        args.random_seed = int(job_parms["random_seed"])
+
     else:
         # Create model.
         message_passing_model = MessagePassingModel(
@@ -99,6 +100,12 @@ if __name__ == "__main__":
             n_dcm=n_dcm,
             include_pseudotensors=include_pseudotensors,
         )
+
+
+
+    # data_key, train_key = jax.random.split(jax.random.PRNGKey(args.random_seed), 2)
+
+    data_key, train_key = jax.random.split(jax.random.PRNGKey(0), 2)
 
     # load data
     data_file = Path(args.data_dir) / args.data
@@ -123,7 +130,7 @@ if __name__ == "__main__":
     )
     # Set up TensorBoard writer
     log_dir = (
-        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/test2/"
+        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/test4/"
         + time.strftime("%Y%m%d-%H%M%S")
         + f"dcm-{n_dcm}-w-{esp_w}-re-{isRestart}-pt{message_passing_model.include_pseudotensors}"
     )

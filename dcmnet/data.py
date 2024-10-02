@@ -266,7 +266,7 @@ def prepare_batches(key, data, batch_size, include_id=False, data_keys=None) -> 
         data_keys.append("id")
 
     for perm in perms:
-        print(perm)
+        # print(perm)
         dict_ = dict()
         for k, v in data.items():
             if k in data_keys:

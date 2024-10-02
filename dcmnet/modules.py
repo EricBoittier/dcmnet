@@ -81,7 +81,8 @@ class MessagePassingModel(nn.Module):
         atomic_mono = atomic_mono.squeeze(axis=1)
         atomic_mono += element_bias[atomic_numbers][:, None]
 
-        x = e3x.nn.hard_tanh(x) * 0.173
+        x = e3x.nn.hard_tanh(x) * 0.3
+        
         atomic_dipo = x[:, 1, 1:4, :]
         atomic_dipo += positions[:, :, None]
 
@@ -192,7 +193,7 @@ class MessagePassingModelDEBUG(nn.Module):
         atomic_mono += element_bias[atomic_numbers][:, None]
         jax.debug.print("atomic_mono {x}",x=atomic_mono.shape)
         jax.debug.print("x {x}",x=x[non_zero])
-        x = e3x.nn.hard_tanh(x) * 0.173
+        x = e3x.nn.hard_tanh(x)  * 0.5
         jax.debug.print("xx {x}",x=x.shape)
         atomic_dipo = x[:, 1, 1:4, :]
         jax.debug.print("atomic_dipo {x}",x=atomic_dipo[non_zero])

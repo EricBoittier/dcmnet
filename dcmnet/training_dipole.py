@@ -8,6 +8,14 @@ import optax
 from dcmnet.loss import dipo_esp_mono_loss
 from dcmnet.data import prepare_batches, prepare_datasets
 
+import jax
+import jax.numpy as jnp
+import optax
+from collections import deque
+from typing import Dict, Optional, Literal
+
+
+
 
 def clip_grads_by_global_norm(grads, max_norm):
     """
@@ -51,16 +59,34 @@ def create_adam_optimizer_with_exponential_decay(
     - An Adam optimizer with exponential decay.
     """
     # Calculate the decay rate needed to go from initial_lr to final_lr over total_steps
-    decay_rate = (final_lr / initial_lr) ** (1 / total_steps)
+    # decay_rate = (final_lr / initial_lr) ** (1 / total_steps)
     
-    # Learning rate schedule with exponential decay
-    lr_schedule = optax.exponential_decay(
-        init_value=initial_lr,
-        transition_steps=transition_steps,
-        decay_rate=decay_rate,
-        end_value=final_lr,  # Set the final value to explicitly stop at final_lr
-        staircase=False  # Smooth decay, set True if you want step-wise decay
-    )
+    # # Learning rate schedule with exponential decay
+    # lr_schedule = optax.exponential_decay(
+    #     init_value=initial_lr,
+    #     transition_steps=transition_steps,
+    #     decay_rate=decay_rate,
+    #     end_value=final_lr,  # Set the final value to explicitly stop at final_lr
+    #     staircase=False  # Smooth decay, set True if you want step-wise decay
+    # )
+
+    num_cycles = 10
+    lr_schedule = optax.join_schedules(schedules=
+                                        [optax.cosine_onecycle_schedule(
+        peak_value=0.0005 - 0.00005*i,
+        transition_steps=500,
+        div_factor=1.1,
+        final_div_factor=2
+    ) for i in range(num_cycles)], 
+                                       boundaries=jnp.cumsum(jnp.array([500] * num_cycles)))
+
+
+    # lr_schedule = optax.cosine_onecycle_schedule(
+    #     peak_value=0.001,
+    #     transition_steps=3000,
+    #     div_factor=2,
+    #     final_div_factor=2
+    # )
 
     # Adam optimizer with the learning rate schedule
     optimizer = optax.adam(learning_rate=lr_schedule)
@@ -104,7 +130,7 @@ def update_ema_params(ema_params, new_params, decay):
 )
 def train_step_dipo(
     model_apply, optimizer_update, batch, batch_size, opt_state, params, esp_w, ndcm,
-     clip_norm=1.0
+     clip_norm=2.0
 ):
     def loss_fn(params):
         mono, dipo = model_apply(
@@ -137,6 +163,7 @@ def train_step_dipo(
     # Clip gradients by their global norm
     clipped_grads = clip_grads_by_global_norm(grad, clip_norm)
     updates, opt_state = optimizer_update(clipped_grads, opt_state, params)
+    # updates, opt_state = optimizer_update(grad, opt_state, params)
     params = optax.apply_updates(params, updates)
     
     return params, opt_state, loss, esp_l, mono_l, dipo_l
