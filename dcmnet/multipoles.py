@@ -1,9 +1,10 @@
+from pathlib import Path
+
+import ase.visualize
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
-import ase.visualize
-from ase.visualize.plot import plot_atoms
 import patchworklib as pw
+from ase.visualize.plot import plot_atoms
 from patchworklib import Brick
 
 # set colormap
@@ -198,20 +199,17 @@ def calc_dipole_esp(data):
         for grid_point in range(data["grid"].shape[0]):
             r = (data["grid"][grid_point] - data["xyz"][i]) * 1.8897259886
             r_norm = np.linalg.norm(r)
-            calc_esp[grid_point] += (
-                np.dot(data["dipoles"][i] / 1.8897259886**2, r) / r_norm**3
-            )
+            calc_esp[grid_point] += np.dot(data["dipoles"][i], r) / r_norm**3
     return calc_esp
 
 
 def calc_quad_esp(data):
     calc_esp = np.zeros(data["esp"].shape)
     for i in range(data["quadrupoles"].shape[0]):
-        # data["quadrupoles"][i] = make_traceless(data["quadrupoles"][i])
         for grid_point in range(data["grid"].shape[0]):
             r = (data["grid"][grid_point] - data["xyz"][i]) * 1.8897259886
             r_norm = np.linalg.norm(r)
-            v = np.dot(r, np.dot(data["quadrupoles"][i] , r)) / (2 * r_norm**5)
+            v = np.dot(r, np.dot(data["quadrupoles"][i], r)) / (2 * r_norm**5)
             calc_esp[grid_point] += v
     return calc_esp
 

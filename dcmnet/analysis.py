@@ -14,6 +14,8 @@ from dcmnet.modules import MessagePassingModel, MessagePassingModelDEBUG
 from dcmnet.multipoles import calc_esp_from_multipoles
 from dcmnet.utils import apply_model
 
+from tqdm import tqdm
+
 data_path = Path("/pchem-data/meuwly/boittier/home/analysis")
 
 data = np.load(
@@ -169,7 +171,7 @@ def multipoles_analysis(outdata: dict):
     quad = dipo + quad
     outdata["elements"] = np.array([ase.data.atomic_numbers[i] for i in outdata["elements"]])
     # print(outdata)
-    mask, closest_atom_type = cut_vdw(grid, outdata["xyz"], outdata["elements"])
+    mask, closest_atom_type, closest_atom = cut_vdw(grid, outdata["xyz"], outdata["elements"])
 
     rmse_mono = rmse(esp, mono)
     rmse_dipo = rmse(esp, dipo)
@@ -198,6 +200,7 @@ def multipoles_analysis(outdata: dict):
         "quad": quad,
         "esp": esp,
         "closest_atom_type": closest_atom_type,
+        "closest_atom": closest_atom,
         "mask": mask,
         "rmse_mono": rmse_mono,
         "rmse_dipo": rmse_dipo,
@@ -227,7 +230,7 @@ def dcmnet_analysis(params, model, batch):
     )
     D = pred_dipole(dipo, batch["com"], mono.reshape(60 * model.n_dcm))
     D_mae = jnp.mean(jnp.abs(D - batch["Dxyz"])) * au_to_debye
-    mask, closest_atom_type = cut_vdw(batch["vdw_surface"][0], batch["R"], batch["Z"])
+    mask, closest_atom_type, closest_atom = cut_vdw(batch["vdw_surface"][0], batch["R"], batch["Z"])
     rmse_model = rmse(batch["esp"][0], esp_dc_pred[0])
     rmse_model_masked = rmse(batch["esp"][0][mask], esp_dc_pred[0][mask])
     output_data = {
@@ -238,6 +241,7 @@ def dcmnet_analysis(params, model, batch):
         "esp_pred": esp_dc_pred[0],
         "mask": mask,
         "closest_atom_type": closest_atom_type,
+        "closest_atom": closest_atom,
         "rmse_model": rmse_model,
         "rmse_model_masked": rmse_model_masked,
     }
@@ -252,13 +256,14 @@ def multipoles(path: Path):
     return output
 
 
-def dcmnet(path: Path, params_path: Path):
+def dcmnet(paths: list, params_path: Path):
     """ """
-    model, params = create_model_and_params(params_path)
-    batch = prepare_batch(path)
-    output = dcmnet_analysis(params, model, batch)
-    save_output(output, path, params_path)
-    return output
+    model, params, _ = create_model_and_params(params_path)
+    for path in tqdm(paths):
+        batch = prepare_batch(path)
+        output = dcmnet_analysis(params, model, batch)
+        save_output(output, path, params_path)
+    # return output
 
 
 def save_output(output, path, params_path=None):

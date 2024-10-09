@@ -17,7 +17,7 @@ def cut_vdw(grid, xyz, elements, vdw_scale=1.4):
     closest_atom = np.argmin(distances, axis=1)
     closest_atom_type = elements[closest_atom]
     mask = ~mask.any(axis=1)
-    return mask, closest_atom_type
+    return mask, closest_atom_type, closest_atom
 
 def prepare_multiple_datasets(key, num_train, num_valid, filename=["esp2000.npz"], clean=False):
     """
