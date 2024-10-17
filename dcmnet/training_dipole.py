@@ -89,7 +89,8 @@ def create_adam_optimizer_with_exponential_decay(
     # )
 
     # Adam optimizer with the learning rate schedule
-    optimizer = optax.adam(learning_rate=lr_schedule)
+    optimizer = optax.adamw(learning_rate=lr_schedule)
+    # optimizer = optax.adam(learning_rate=0.00001)
     # optimizer = optax.amsgrad(learning_rate=lr_schedule)
     return optimizer
 

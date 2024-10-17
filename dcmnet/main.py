@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     # data_key, train_key = jax.random.split(jax.random.PRNGKey(args.random_seed), 2)
 
-    data_key, train_key = jax.random.split(jax.random.PRNGKey(0), 2)
+    data_key, train_key = jax.random.split(jax.random.PRNGKey(1), 2)
 
     # load data
     data_file = Path(args.data_dir) / args.data
@@ -113,10 +113,11 @@ if __name__ == "__main__":
         Path(args.data_dir) / "data/qm9-esp-dip-40000-0.npz",
         Path(args.data_dir) / "data/qm9-esp-dip-40000-1.npz",
         Path(args.data_dir) / "data/qm9-esp-dip-40000-2.npz",
-        # Path(args.data_dir) / "data/qm9-esp-dip-6907-3.npz", 
+        # Path(args.data_dir) / "data/spice2-esp-dip-1977-0.npz", 
     ]
     train_data, valid_data = prepare_datasets(
         data_key, args.n_train, args.n_valid, data, clean=True
+        # data_key, 1877, 100, data, clean=True
     )
     n_dcm = message_passing_model.n_dcm
     args.n_dcm = n_dcm
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     )
     # Set up TensorBoard writer
     log_dir = (
-        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/test4/"
+        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/diponore/"
         + time.strftime("%Y%m%d-%H%M%S")
         + f"dcm-{n_dcm}-w-{esp_w}-re-{isRestart}-pt{message_passing_model.include_pseudotensors}"
     )
@@ -154,7 +155,8 @@ if __name__ == "__main__":
             learning_rate=learning_rate,
             batch_size=batch_size,
             writer=writer,
-            restart_params=restart_params,
+            # restart_params=restart_params,
+            restart_params=None,
             esp_w=esp_w,
             ndcm=n_dcm,
         )

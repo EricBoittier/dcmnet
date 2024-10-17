@@ -178,13 +178,11 @@ def esp_rmse_cgenff_model(data, esp, closest_atom, atom_types_df):
     mask = data["mask"]
 
     mono_res = []
-    esp_mav = []
     nps = []
 
     for i, at in enumerate(top_cgenff_atom_types):
         tmp_at_df = atom_types_df[atom_types_df["atom_id"] == at]
         atom_idxs = tmp_at_df["idx"].values
-        # mask_at = np.array([1 if _ in atom_idxs else 0 for _ in closest_atom])
         mask_at = np.isin(closest_atom, atom_idxs).astype(int)
 
         if len(mask_at) == 0:

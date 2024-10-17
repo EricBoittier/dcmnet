@@ -81,7 +81,7 @@ class MessagePassingModel(nn.Module):
         atomic_mono = atomic_mono.squeeze(axis=1)
         atomic_mono += element_bias[atomic_numbers][:, None]
 
-        x = e3x.nn.hard_tanh(x) * 0.3
+        x = e3x.nn.hard_tanh(x) * 0.175
         
         atomic_dipo = x[:, 1, 1:4, :]
         atomic_dipo += positions[:, :, None]
