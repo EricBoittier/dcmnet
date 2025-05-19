@@ -7,20 +7,21 @@ import numpy as np
 import pandas as pd
 from jax import vmap
 from scipy.spatial.distance import cdist
+from tqdm import tqdm
 
-from dcmnet.data import prepare_batches, cut_vdw
+from dcmnet.data import cut_vdw, prepare_batches
 from dcmnet.loss import esp_mono_loss_pots, pred_dipole
 from dcmnet.modules import MessagePassingModel, MessagePassingModelDEBUG
 from dcmnet.multipoles import calc_esp_from_multipoles
 from dcmnet.utils import apply_model
 
-from tqdm import tqdm
+LOAD_DATA = False
+if LOAD_DATA:
+    data_path = Path("/pchem-data/meuwly/boittier/home/analysis")
 
-data_path = Path("/pchem-data/meuwly/boittier/home/analysis")
-
-data = np.load(
-    Path("/pchem-data/meuwly/boittier/home/jaxeq/") / "data/qm9-esp-dip-6907-3.npz"
-)
+    data = np.load(
+        Path("/pchem-data/meuwly/boittier/home/jaxeq/") / "data/qm9-esp-dip-6907-3.npz"
+    )
 au_to_debye = 2.5417464519
 au_to_kcal = 627.509
 
@@ -33,8 +34,16 @@ num_basis_functions = 8
 cutoff = 4.0
 
 
-def create_model(n_dcm=2, features=16, max_degree=2, num_iterations=2, num_basis_functions=16, cutoff=4.0,
-                include_pseudotensors=False, debug=False):
+def create_model(
+    n_dcm=2,
+    features=16,
+    max_degree=2,
+    num_iterations=2,
+    num_basis_functions=16,
+    cutoff=4.0,
+    include_pseudotensors=False,
+    debug=False,
+):
     model_type = MessagePassingModel if not debug else MessagePassingModelDEBUG
     return model_type(
         features=int(features),
@@ -47,8 +56,11 @@ def create_model(n_dcm=2, features=16, max_degree=2, num_iterations=2, num_basis
         include_pseudotensors=True,
     )
 
+
 def parm_dict_from_path(path):
-    list_ = [_.split("=") for _ in open(Path(path).parents[0] / "manifest.txt").readlines()]
+    list_ = [
+        _.split("=") for _ in open(Path(path).parents[0] / "manifest.txt").readlines()
+    ]
     job_parms = {}
     for _ in list_:
         if len(_) == 2:
@@ -56,14 +68,14 @@ def parm_dict_from_path(path):
                 job_parms[_[0].strip()] = float(_[1].strip())
             except:
                 job_parms[_[0].strip()] = _[1].strip()
-                
+
     if "include_pseudotensors" not in job_parms.keys():
         job_parms["include_pseudotensors"] = "False"
     if job_parms["include_pseudotensors"] == "False":
         job_parms["include_pseudotensors"] = False
     if job_parms["include_pseudotensors"] == "True":
         job_parms["include_pseudotensors"] = True
-        
+
     return job_parms
 
 
@@ -79,8 +91,16 @@ def create_model_and_params(path, debug=False):
 
     params = pd.read_pickle(path)
     job_parms_ = parm_dict_from_path(path)
-    job_args = ["n_dcm", "features", "max_degree", "num_iterations", "num_basis_functions", "cutoff", "include_pseudotensors"]
-    job_parms = {k:v for k,v in job_parms_.items() if k in job_args}
+    job_args = [
+        "n_dcm",
+        "features",
+        "max_degree",
+        "num_iterations",
+        "num_basis_functions",
+        "cutoff",
+        "include_pseudotensors",
+    ]
+    job_parms = {k: v for k, v in job_parms_.items() if k in job_args}
     job_parms["debug"] = debug
     print(job_parms)
     model = create_model(**job_parms)
@@ -102,8 +122,6 @@ def read_output(JOBNAME):
         if _.startswith(" Dipole Z"):
             dZ = float(_.split()[-1])
     return mag, np.array([dX, dY, dZ])
-
-
 
 
 def make_traceless(Q):
@@ -169,9 +187,13 @@ def multipoles_analysis(outdata: dict):
     mono, dipo, quad = calc_esp_from_multipoles(outdata)
     dipo = mono + dipo
     quad = dipo + quad
-    outdata["elements"] = np.array([ase.data.atomic_numbers[i] for i in outdata["elements"]])
+    outdata["elements"] = np.array(
+        [ase.data.atomic_numbers[i] for i in outdata["elements"]]
+    )
     # print(outdata)
-    mask, closest_atom_type, closest_atom = cut_vdw(grid, outdata["xyz"], outdata["elements"])
+    mask, closest_atom_type, closest_atom = cut_vdw(
+        grid, outdata["xyz"], outdata["elements"]
+    )
 
     rmse_mono = rmse(esp, mono)
     rmse_dipo = rmse(esp, dipo)
@@ -180,12 +202,7 @@ def multipoles_analysis(outdata: dict):
     rmse_dipo_masked = rmse(esp[mask], dipo[mask])
     rmse_quad_masked = rmse(esp[mask], quad[mask])
 
-    masses = np.array(
-        [
-            ase.data.atomic_masses[s]
-            for s in outdata["elements"]
-        ]
-    )
+    masses = np.array([ase.data.atomic_masses[s] for s in outdata["elements"]])
     com = jnp.sum(outdata["xyz"] * masses[:, None], axis=0) / jnp.sum(masses)
     D_mono = pred_dipole(outdata["xyz"], com, outdata["monopoles"])
 
@@ -230,7 +247,9 @@ def dcmnet_analysis(params, model, batch):
     )
     D = pred_dipole(dipo, batch["com"], mono.reshape(60 * model.n_dcm))
     D_mae = jnp.mean(jnp.abs(D - batch["Dxyz"])) * au_to_debye
-    mask, closest_atom_type, closest_atom = cut_vdw(batch["vdw_surface"][0], batch["R"], batch["Z"])
+    mask, closest_atom_type, closest_atom = cut_vdw(
+        batch["vdw_surface"][0], batch["R"], batch["Z"]
+    )
     rmse_model = rmse(batch["esp"][0], esp_dc_pred[0])
     rmse_model_masked = rmse(batch["esp"][0][mask], esp_dc_pred[0][mask])
     output_data = {
@@ -266,7 +285,7 @@ def dcmnet(paths: list, params_path: Path):
     # return output
 
 
-def save_output(output, path, params_path=None):
+def save_output(output, path, params_path=None, data_path=Path(".")):
     """ """
     folder = path.stem
     if params_path is None:
