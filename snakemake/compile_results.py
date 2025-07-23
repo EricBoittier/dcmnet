@@ -39,6 +39,7 @@ for d in tqdm(compiled, desc="Processing"):
     d = dict(d)  # shallow copy
     d.pop("mol", None)
     d.pop("opt_callback", None)
+    d.pop("calcs", None)
     # Calculate n_grid
     d["n_grid"] = len(d["esp"])
     # Rename esp_grid to vdw_surface
@@ -69,7 +70,7 @@ for d in tqdm(compiled, desc="Processing"):
         grad_padded = np.zeros((max_n_atoms, 3))
         grad_padded[:n_atoms] = d["gradient"]
         d["gradient"] = grad_padded
-        
+
     # Pad vdw_surface
     vdw_padded = np.full((max_n_grid, 3), 1000.0)
     vdw_padded[:n_grid] = d["vdw_surface"]
