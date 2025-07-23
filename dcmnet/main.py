@@ -28,6 +28,9 @@ if __name__ == "__main__":
     args.add_argument(
         "--include_pseudotensors", default=False, action=argparse.BooleanOptionalAction
     )
+    args.add_argument("--log_dir", type=str, default=None, help="Directory for TensorBoard logs (default: auto-generated)")
+    args.add_argument("--checkpoint_dir", type=str, default=None, help="Directory for checkpoints (default: auto-generated)")
+    args.add_argument("--data_files", type=str, nargs="*", default=None, help="List of data file paths (default: 3 QM9 dipole files)")
     args = args.parse_args()
     print("args:")
     for k, v in vars(args).items():
@@ -59,10 +62,17 @@ if __name__ == "__main__":
 
     from dcmnet.data import prepare_datasets
     from dcmnet.modules import MessagePassingModel
-    from dcmnet.training import train_model
-    from dcmnet.training_dipole import train_model_dipo
+    from dcmnet.training import train_model, train_model_dipo
 
-    training = train_model if args.type == "default" else train_model_dipo
+    # Select training function based on --type argument
+    TRAINING_MODES = {
+        "default": train_model,
+        "dipole": train_model_dipo,
+        # Add custom modes here, e.g. "custom": train_model_custom
+    }
+    if args.type not in TRAINING_MODES:
+        raise ValueError(f"Unknown training type: {args.type}. Available: {list(TRAINING_MODES.keys())}")
+    training = TRAINING_MODES[args.type]
 
     NATOMS = 60
 
@@ -82,13 +92,10 @@ if __name__ == "__main__":
     num_epochs = args.num_epochs
     isRestart = args.restart is not None
 
-
     if isRestart:
         from dcmnet.analysis import create_model_and_params
-
         message_passing_model, restart_params, job_parms = create_model_and_params(args.restart)
         args.random_seed = int(job_parms["random_seed"])
-
     else:
         # Create model.
         message_passing_model = MessagePassingModel(
@@ -101,45 +108,48 @@ if __name__ == "__main__":
             include_pseudotensors=include_pseudotensors,
         )
 
-
-
     # data_key, train_key = jax.random.split(jax.random.PRNGKey(args.random_seed), 2)
-
     data_key, train_key = jax.random.split(jax.random.PRNGKey(1), 2)
 
-    # load data
-    data_file = Path(args.data_dir) / args.data
-    data = [
-        Path(args.data_dir) / "data/qm9-esp-dip-40000-0.npz",
-        Path(args.data_dir) / "data/qm9-esp-dip-40000-1.npz",
-        Path(args.data_dir) / "data/qm9-esp-dip-40000-2.npz",
-        # Path(args.data_dir) / "data/spice2-esp-dip-1977-0.npz", 
-    ]
+    # Data files
+    if args.data_files is not None and len(args.data_files) > 0:
+        data = [Path(f) for f in args.data_files]
+    else:
+        data = [
+            Path(args.data_dir) / "data/qm9-esp-dip-40000-0.npz",
+            Path(args.data_dir) / "data/qm9-esp-dip-40000-1.npz",
+            Path(args.data_dir) / "data/qm9-esp-dip-40000-2.npz",
+        ]
     train_data, valid_data = prepare_datasets(
         data_key, args.n_train, args.n_valid, data, clean=True
-        # data_key, 1877, 100, data, clean=True
     )
     n_dcm = message_passing_model.n_dcm
     args.n_dcm = n_dcm
     args.n_train = len(train_data["Z"])
     args.n_valid = len(valid_data["Z"])
     args.data = "_".join([str(_) for _ in data])
-    
-    # make checkpoint directory
-    safe_mkdir(
-        f"/pchem-data/meuwly/boittier/home/jaxeq/checkpoints2/dcm{n_dcm}-{esp_w}"
-    )
-    # Set up TensorBoard writer
-    log_dir = (
-        "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/diponore/"
-        + time.strftime("%Y%m%d-%H%M%S")
-        + f"dcm-{n_dcm}-w-{esp_w}-re-{isRestart}-pt{message_passing_model.include_pseudotensors}"
-    )
+
+    # Checkpoint directory
+    if args.checkpoint_dir is not None:
+        checkpoint_dir = args.checkpoint_dir
+    else:
+        checkpoint_dir = f"/pchem-data/meuwly/boittier/home/jaxeq/checkpoints2/dcm{n_dcm}-{esp_w}"
+    safe_mkdir(checkpoint_dir)
+
+    # Log directory
+    if args.log_dir is not None:
+        log_dir = args.log_dir
+    else:
+        log_dir = (
+            "/pchem-data/meuwly/boittier/home/jaxeq/all_runs/diponore/"
+            + time.strftime("%Y%m%d-%H%M%S")
+            + f"dcm-{n_dcm}-w-{esp_w}-re-{isRestart}-pt{message_passing_model.include_pseudotensors}"
+        )
     safe_mkdir(log_dir)
     writer = SummaryWriter(log_dir)
     print(log_dir)
     # make a note of the settings
-    with open(log_dir + "/manifest.txt", "w") as f:
+    with open(Path(log_dir) / "manifest.txt", "w") as f:
         f.write(str(message_passing_model))
         for k, v in vars(args).items():
             f.write(f"\n{k} = {v}")
@@ -155,8 +165,7 @@ if __name__ == "__main__":
             learning_rate=learning_rate,
             batch_size=batch_size,
             writer=writer,
-            # restart_params=restart_params,
-            restart_params=None,
+            restart_params=restart_params,
             esp_w=esp_w,
             ndcm=n_dcm,
         )
