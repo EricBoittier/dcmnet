@@ -3,6 +3,7 @@ import argparse
 import pickle
 import numpy as np
 from pathlib import Path
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description="Compile calculation results into a single npz file with padding.")
 parser.add_argument("--input_dir", type=str, required=True, help="Directory containing result files (pickled dicts)")
@@ -17,7 +18,9 @@ max_n_atoms = 0
 max_n_grid = 0
 
 # First pass: determine max_n_atoms and max_n_grid
-for file in sorted(input_dir.glob("*.pkl")):
+files = sorted(input_dir.glob("*.pkl"))
+print(f"Scanning {len(files)} files for max shape...")
+for file in tqdm(files, desc="Scanning"):
     with open(file, "rb") as f:
         d = pickle.load(f)
     n_atoms = d["R"].shape[0]
@@ -30,7 +33,8 @@ for file in sorted(input_dir.glob("*.pkl")):
 
 # Second pass: pad and process
 processed = []
-for d in compiled:
+print("Padding and stacking data...")
+for d in tqdm(compiled, desc="Processing"):
     # Remove unserializable keys
     d = dict(d)  # shallow copy
     d.pop("mol", None)
@@ -51,19 +55,21 @@ for d in compiled:
     Z_padded = np.zeros((max_n_atoms,), dtype=d["Z"].dtype)
     Z_padded[:n_atoms] = d["Z"]
     d["Z"] = Z_padded
-    # Pad mono
-    mono_padded = np.zeros((max_n_atoms,), dtype=d["mono"].dtype)
-    mono_padded[:n_atoms] = d["mono"]
-    d["mono"] = mono_padded
-    # Pad mono_Z (copy of mono, but values replaced by Z)
-    mono_Z = np.zeros((max_n_atoms,), dtype=d["Z"].dtype)
-    mono_Z[:n_atoms] = d["Z"]
-    d["mono_Z"] = mono_Z
+    if "mono" in d:
+        # Pad mono
+        mono_padded = np.zeros((max_n_atoms,), dtype=d["mono"].dtype)
+        mono_padded[:n_atoms] = d["mono"]
+        d["mono"] = mono_padded
+    else:
+        # if mono is not present, use atomic numbers as mono
+        d["mono"] = d["Z"]
+
     # Pad gradient
     if "gradient" in d:
         grad_padded = np.zeros((max_n_atoms, 3))
         grad_padded[:n_atoms] = d["gradient"]
         d["gradient"] = grad_padded
+        
     # Pad vdw_surface
     vdw_padded = np.full((max_n_grid, 3), 1000.0)
     vdw_padded[:n_grid] = d["vdw_surface"]
