@@ -22,7 +22,7 @@ plt.set_cmap("bwr")
 
 
 def evaluate_dc(
-    batch, dipo, mono, batch_size, nDCM, plot=False, id=False
+    batch, dipo, mono, batch_size, nDCM, plot=False, id=False, rcut0=3, rcut=4
 ):
 
     esp_dc_pred = esp_mono_loss_pots(
