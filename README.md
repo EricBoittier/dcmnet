@@ -126,13 +126,5 @@ params, val_loss = train_model_general(
 - **grad_clip_norm**: Norm for gradient clipping.
 - **log_extra_metrics**: Function to log extra metrics (see `_log_extra_metrics_dipo` for an example).
 - **save_best_params_with_ema**: If True, checkpoints EMA params; else, raw params.
-- **extra_valid_args, extra_train_args**: Dicts for passing extra arguments to step functions.
+- **extra_valid_args, extra_train_args**: Dicts for passing extra arguments to step functions
 
----
-
-### Extending Further
-- Add new metrics to the logging function.
-- Add new optimizer schedules.
-- Add new loss functions or batch handling logic.
-
-If you want a template for a new training mode, or want to see a diagram of the new structure, or have any other requests, see the code in `dcmnet/training.py` or ask the maintainers!
