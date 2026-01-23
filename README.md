@@ -1,6 +1,10 @@
-# Distributed Charge Models predicted using Equivarient Neural Networks
+# Distributed Charge Models predicted using Equivariant Neural Networks
 
 ## Introduction
+
+A HuggingFace space is available [here](https://huggingface.co/spaces/EricBoi/DCMNet)
+
+
 
 ## Requirements
 
