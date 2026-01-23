@@ -1,0 +1,3 @@
+[submodule "DCMNet"]
+	path = DCMNet
+	url = https://huggingface.co/spaces/EricBoi/DCMNet
