@@ -4,4 +4,3 @@ ase
 scipy
 rdkit
 #tqdm
-dcmnet @ git+https://github.com/EricBoittier/jaxeq@main
