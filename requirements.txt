@@ -3,4 +3,5 @@ patchworklib
 ase
 scipy
 rdkit
-#tqdm
+
+
